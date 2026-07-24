@@ -1,0 +1,2565 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PEMFC MEA Testing Dashboard v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ========== RESET & BASE ========== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;scroll-padding-top:0}
+body{min-height:100dvh;font-family:'Inter',sans-serif;line-height:1.6;overflow:hidden}
+img,svg{display:block;max-width:100%}
+input,button,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+table{border-collapse:collapse;width:100%}
+ul{list-style:none}
+
+/* ========== THEME VARIABLES ========== */
+:root,[data-theme="dark"]{
+  --bg:#0f1117;--bg-sidebar:#0b0d14;--surface:#1a1d27;--surface-2:#22263a;--surface-3:#2a2e42;
+  --border:#2d3148;--border-light:#3a3f5c;
+  --text:#e1e4ed;--text-muted:#8b8fa3;--text-faint:#5a5e72;
+  --blue:#4f8ef7;--green:#3ecf8e;--orange:#f97316;--purple:#a855f7;--red:#ef4444;
+  --blue-dim:rgba(79,142,247,0.12);--green-dim:rgba(62,207,142,0.12);
+  --orange-dim:rgba(249,115,22,0.12);--purple-dim:rgba(168,85,247,0.12);
+  --shadow:0 4px 24px rgba(0,0,0,0.4);--shadow-sm:0 2px 8px rgba(0,0,0,0.3);
+  --radius:8px;--radius-sm:6px;--radius-lg:12px;
+  --transition:180ms cubic-bezier(0.16,1,0.3,1);
+}
+[data-theme="light"]{
+  --bg:#f0f2f5;--bg-sidebar:#ffffff;--surface:#ffffff;--surface-2:#f7f8fa;--surface-3:#eef0f4;
+  --border:#d8dbe5;--border-light:#e4e7f0;
+  --text:#1a1d27;--text-muted:#5a5e72;--text-faint:#8b8fa3;
+  --blue:#2563eb;--green:#16a34a;--orange:#ea580c;--purple:#9333ea;--red:#dc2626;
+  --blue-dim:rgba(37,99,235,0.08);--green-dim:rgba(22,163,74,0.08);
+  --orange-dim:rgba(234,88,12,0.08);--purple-dim:rgba(147,51,234,0.08);
+  --shadow:0 4px 24px rgba(0,0,0,0.08);--shadow-sm:0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* ========== LAYOUT ========== */
+.app{display:flex;height:100dvh;background:var(--bg);color:var(--text)}
+.sidebar{width:240px;min-width:240px;background:var(--bg-sidebar);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth}
+.main-inner{padding:24px 32px 64px;max-width:1400px;margin:0 auto}
+
+/* ========== SIDEBAR ========== */
+.sidebar-header{padding:20px 16px 12px;border-bottom:1px solid var(--border)}
+.sidebar-logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.sidebar-logo svg{width:32px;height:32px;flex-shrink:0}
+.sidebar-logo span{font-size:14px;font-weight:700;letter-spacing:-0.02em;color:var(--text)}
+.sidebar-sub{font-size:11px;color:var(--text-faint);letter-spacing:0.04em;text-transform:uppercase;margin-top:2px}
+.sidebar-nav{padding:12px 8px;flex:1}
+.nav-section{margin-bottom:8px}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-faint);padding:8px 12px 4px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);
+  font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;transition:all var(--transition);
+  text-decoration:none;position:relative}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:var(--blue-dim);color:var(--blue);font-weight:600}
+.nav-item i{width:18px;text-align:center;font-size:13px;opacity:0.7}
+.nav-item.active i{opacity:1}
+.nav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.theme-toggle{width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;
+  justify-content:center;color:var(--text-muted);transition:all var(--transition)}
+.theme-toggle:hover{background:var(--surface);color:var(--text)}
+.export-btn{flex:1;padding:8px 12px;border-radius:var(--radius-sm);background:var(--surface);
+  font-size:12px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;gap:6px;
+  justify-content:center;transition:all var(--transition);border:1px solid var(--border)}
+.export-btn:hover{color:var(--blue);border-color:var(--blue)}
+
+/* ========== SECTIONS ========== */
+.section{display:none;animation:fadeIn 0.25s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.section-header{margin-bottom:24px}
+.section-title{font-size:22px;font-weight:700;letter-spacing:-0.02em}
+.section-desc{font-size:13px;color:var(--text-muted);margin-top:4px}
+
+/* ========== CARDS ========== */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.card-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:0.05em}
+
+/* ========== TABS ========== */
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--surface-2);padding:3px;border-radius:var(--radius);border:1px solid var(--border)}
+.tab-btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text-muted);
+  transition:all var(--transition);flex:1;text-align:center}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{background:var(--surface);color:var(--text);font-weight:600;box-shadow:var(--shadow-sm)}
+.tab-content{display:none;animation:fadeIn 0.2s ease}
+.tab-content.active{display:block}
+
+/* ========== TABLES ========== */
+.param-table{width:100%;font-size:13px}
+.param-table th{text-align:left;padding:8px 12px;font-weight:600;color:var(--text-muted);font-size:11px;
+  text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.param-table td{padding:6px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.param-table tr:last-child td{border-bottom:none}
+.param-table .param-name{font-weight:500;color:var(--text);white-space:nowrap;min-width:160px}
+.param-table .param-unit{color:var(--text-faint);font-size:12px;white-space:nowrap}
+.param-table input{width:80px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:13px;color:var(--text);text-align:right}
+.param-table input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-dim)}
+.param-table select{padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:13px;color:var(--text)}
+
+/* ========== PIPELINE ========== */
+.pipeline-wrapper{overflow-x:auto;padding:8px 0 16px}
+.pipeline{display:flex;gap:0;align-items:flex-start;min-width:fit-content;position:relative}
+.pipeline-block{display:flex;flex-direction:column;align-items:center;position:relative;flex-shrink:0}
+.pipeline-main{width:140px;padding:14px 10px;background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius-lg);text-align:center;cursor:pointer;transition:all var(--transition);position:relative;z-index:2}
+.pipeline-main:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}
+.pipeline-main i{font-size:18px;margin-bottom:6px;display:block}
+.pipeline-main .pm-label{font-size:11px;font-weight:700;letter-spacing:0.02em;line-height:1.3}
+.pipeline-arrow{display:flex;align-items:center;align-self:center;margin-top:20px;color:var(--text-faint);font-size:16px;padding:0 2px;flex-shrink:0}
+.pipeline-subs{display:flex;flex-direction:column;gap:4px;margin-top:8px;width:140px}
+.pipeline-sub{padding:6px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:10px;color:var(--text-muted);cursor:pointer;transition:all var(--transition);text-align:center;line-height:1.3}
+.pipeline-sub:hover{border-color:var(--blue);color:var(--text);background:var(--blue-dim)}
+.pipeline-connector{width:1px;height:8px;background:var(--border);margin:0 auto}
+.pm-pretest{border-color:var(--text-faint);color:var(--text-muted)}.pm-pretest i{color:var(--text-faint)}
+.pm-bol{border-color:var(--green)}.pm-bol i{color:var(--green)}
+.pm-pol{border-color:var(--blue)}.pm-pol i{color:var(--blue)}
+.pm-ast{border-color:var(--orange)}.pm-ast i{color:var(--orange)}
+.pm-post{border-color:var(--purple)}.pm-post i{color:var(--purple)}
+
+/* ========== SVG DIAGRAMS ========== */
+.svg-container{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin:12px 0;overflow:hidden;position:relative}
+.svg-container svg{width:100%;height:auto}
+.svg-container .svg-title{font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;
+  letter-spacing:0.05em;margin-bottom:8px}
+
+/* ========== EXPANDABLE ========== */
+.expandable{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden}
+.expandable-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;
+  background:var(--surface);transition:all var(--transition);user-select:none}
+.expandable-header:hover{background:var(--surface-2)}
+.expandable-header i.chevron{font-size:12px;color:var(--text-faint);transition:transform 0.2s ease;width:14px;text-align:center}
+.expandable.open .expandable-header i.chevron{transform:rotate(90deg)}
+.expandable-header .eh-icon{width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;
+  justify-content:center;font-size:13px;flex-shrink:0}
+.expandable-header .eh-title{font-size:14px;font-weight:600;flex:1}
+.expandable-header .eh-badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600}
+.expandable-body{max-height:0;overflow:hidden;transition:max-height 0.35s ease}
+.expandable.open .expandable-body{max-height:5000px}
+.expandable-inner{padding:16px}
+
+/* ========== MISC ========== */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.note{font-size:12px;color:var(--text-faint);padding:8px 12px;background:var(--surface-2);border-left:3px solid var(--blue);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin:8px 0;line-height:1.5}
+.color-blue{color:var(--blue)}.color-green{color:var(--green)}.color-orange{color:var(--orange)}.color-purple{color:var(--purple)}
+.bg-blue{background:var(--blue-dim)}.bg-green{background:var(--green-dim)}.bg-orange{background:var(--orange-dim)}.bg-purple{background:var(--purple-dim)}
+.inline-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;
+  border-radius:99px;text-transform:uppercase;letter-spacing:0.04em}
+
+/* ========== RESPONSIVE ========== */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-240px;top:0;bottom:0;transition:left 0.3s ease;z-index:200;box-shadow:var(--shadow)}
+  .sidebar.open{left:0}
+  .mobile-toggle{display:flex!important}
+  .main-inner{padding:16px}
+  .grid-2{grid-template-columns:1fr}
+  .pipeline-main{width:110px}
+  .pipeline-subs{width:110px}
+}
+.mobile-toggle{display:none;position:fixed;top:12px;left:12px;z-index:150;width:36px;height:36px;
+  border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);
+  align-items:center;justify-content:center;color:var(--text)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150}
+.overlay.active{display:block}
+
+/* ========== PROCEDURE BUILDER ========== */
+.builder-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:1100px){.builder-layout{grid-template-columns:1fr}}
+
+/* BOL selector */
+.bol-selector{display:flex;flex-direction:column;gap:6px}
+.bol-option{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);
+  border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--transition)}
+.bol-option:hover{border-color:var(--green);background:var(--green-dim)}
+.bol-option.selected{border-color:var(--green);background:var(--green-dim)}
+.bol-option .bol-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-light);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--transition);font-size:10px}
+.bol-option.selected .bol-check{background:var(--green);border-color:var(--green);color:#fff}
+.bol-option .bol-name{font-size:13px;font-weight:600;color:var(--text)}
+.bol-option .bol-desc{font-size:11px;color:var(--text-faint);margin-top:1px}
+
+/* AST selector (same pattern as BOL, orange accent) */
+.ast-selector .bol-option:hover{border-color:var(--orange);background:var(--orange-dim)}
+.ast-selector .bol-option.selected{border-color:var(--orange);background:var(--orange-dim)}
+.ast-selector .bol-option.selected .bol-check{background:var(--orange);border-color:var(--orange);color:#fff}
+
+/* EC block list */
+.ec-block-list{display:flex;flex-direction:column;gap:8px;min-height:60px}
+.ec-block-item{background:var(--surface);border:1.5px solid var(--blue);border-radius:var(--radius);overflow:hidden;
+  transition:all var(--transition)}
+.ec-block-item.dragging{opacity:0.5;border-style:dashed}
+.ec-block-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;
+  background:var(--blue-dim);user-select:none}
+.ec-block-header .drag-handle{color:var(--text-faint);cursor:grab;font-size:14px;flex-shrink:0}
+.ec-block-header .drag-handle:active{cursor:grabbing}
+.ec-block-header .block-num{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ec-block-header .block-title{font-size:13px;font-weight:600;flex:1}
+.ec-block-header .block-badges{display:flex;gap:4px}
+.ec-block-header .block-badge{font-size:10px;padding:1px 7px;border-radius:99px;font-weight:600;
+  background:var(--surface-3);color:var(--text-muted)}
+.ec-block-body{padding:12px 14px;background:var(--surface);border-top:1px solid var(--border)}
+.ec-block-body.hidden{display:none}
+
+/* Condition row inline */
+.cond-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.cond-field{display:flex;flex-direction:column;gap:2px}
+.cond-field label{font-size:10px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.05em}
+.cond-field input,.cond-field select{width:80px;padding:4px 8px;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:12px;color:var(--text);text-align:right}
+.cond-field input:focus,.cond-field select:focus{outline:none;border-color:var(--blue)}
+
+/* Sub-measurement list */
+.submeas-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.submeas-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em}
+.submeas-list{display:flex;flex-direction:column;gap:4px}
+.submeas-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px}
+.submeas-item .sm-icon{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;font-size:10px;flex-shrink:0}
+.submeas-item .sm-name{font-weight:600;min-width:60px}
+.submeas-item .sm-params{color:var(--text-muted);font-size:11px;flex:1}
+.submeas-item .sm-actions{display:flex;gap:4px;flex-shrink:0}
+.sm-btn{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-size:10px;transition:all var(--transition);color:var(--text-faint)}
+.sm-btn:hover{background:var(--surface-3);color:var(--text)}
+.sm-btn.del:hover{background:rgba(239,68,68,0.1);color:var(--red)}
+
+/* Add buttons */
+.add-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);
+  border:1.5px dashed var(--border-light);background:transparent;font-size:12px;font-weight:600;
+  color:var(--text-faint);transition:all var(--transition);cursor:pointer;width:100%;justify-content:center;margin-top:4px}
+.add-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-dim)}
+.add-block-btn{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius);
+  border:2px dashed var(--border-light);background:transparent;font-size:13px;font-weight:600;
+  color:var(--text-faint);transition:all var(--transition);cursor:pointer;width:100%;justify-content:center;margin-top:8px}
+.add-block-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-dim)}
+.add-block-btn.post-variant:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-dim)}
+
+/* Remove block btn */
+.remove-block-btn{width:26px;height:26px;border-radius:var(--radius-sm);display:flex;align-items:center;
+  justify-content:center;font-size:11px;color:var(--text-faint);transition:all var(--transition);flex-shrink:0}
+.remove-block-btn:hover{background:rgba(239,68,68,0.12);color:var(--red)}
+
+/* Builder pipeline preview */
+.builder-pipeline-preview{overflow-x:auto;padding:8px 0}
+.preview-flow{display:flex;align-items:center;gap:4px;min-width:fit-content;padding:4px}
+.preview-block{display:flex;flex-direction:column;align-items:center;gap:3px}
+.preview-chip{padding:6px 10px;border-radius:var(--radius-sm);font-size:11px;font-weight:600;
+  white-space:nowrap;border:1.5px solid;transition:all var(--transition)}
+.preview-chip.chip-pretest{border-color:var(--text-faint);color:var(--text-muted);background:var(--surface-2)}
+.preview-chip.chip-bol{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.preview-chip.chip-pol{border-color:var(--blue);color:var(--blue);background:var(--blue-dim)}
+.preview-chip.chip-ast{border-color:var(--orange);color:var(--orange);background:var(--orange-dim)}
+.preview-chip.chip-post{border-color:var(--purple);color:var(--purple);background:var(--purple-dim)}
+.preview-sub{font-size:9px;color:var(--text-faint);text-align:center;max-width:100px;line-height:1.3}
+.preview-arrow{color:var(--text-faint);font-size:12px;flex-shrink:0;align-self:center;padding-top:0px}
+
+/* Modal / inline edit overlay */
+.edit-modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:center;
+  justify-content:center;animation:fadeIn 0.15s ease}
+.edit-modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:24px;min-width:360px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.edit-modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;
+  justify-content:space-between}
+.modal-close{width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;
+  justify-content:center;color:var(--text-faint);font-size:14px;transition:all var(--transition)}
+.modal-close:hover{background:var(--surface-3);color:var(--text)}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.btn-primary{padding:8px 20px;border-radius:var(--radius-sm);background:var(--blue);color:#fff;
+  font-size:13px;font-weight:600;transition:all var(--transition)}
+.btn-primary:hover{opacity:0.85}
+.btn-secondary{padding:8px 20px;border-radius:var(--radius-sm);background:var(--surface-2);
+  border:1px solid var(--border);color:var(--text-muted);font-size:13px;font-weight:600}
+.btn-secondary:hover{color:var(--text);border-color:var(--border-light)}
+
+/* EIS rows in builder */
+.eis-rows{display:flex;flex-direction:column;gap:4px}
+.eis-row{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:var(--radius-sm)}
+.eis-row input{width:70px}
+
+/* Section title row with actions */
+.section-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.title-actions{display:flex;gap:6px}
+
+/* Apply to EC btn */
+.apply-btn{padding:6px 14px;border-radius:var(--radius-sm);background:var(--green);color:#fff;
+  font-size:12px;font-weight:600;transition:all var(--transition)}
+.apply-btn:hover{opacity:0.85}
+
+/* Block expand toggle */
+.block-toggle-btn{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;font-size:11px;color:var(--text-faint);transition:all var(--transition);flex-shrink:0}
+.block-toggle-btn:hover{background:var(--surface-3);color:var(--text)}
+.block-toggle-btn i{transition:transform 0.2s ease}
+.ec-block-item.expanded .block-toggle-btn i.toggle-chevron{transform:rotate(90deg)}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Mobile toggle -->
+  <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="28" height="28" rx="6" stroke="var(--blue)" stroke-width="2"/>
+          <path d="M8 22V10h4v12H8z" fill="var(--blue)" opacity="0.3"/>
+          <path d="M14 22V14h4v8h-4z" fill="var(--blue)" opacity="0.55"/>
+          <path d="M20 22V8h4v14h-4z" fill="var(--blue)" opacity="0.85"/>
+          <line x1="6" y1="24" x2="26" y2="24" stroke="var(--blue)" stroke-width="1.5"/>
+        </svg>
+        <span>PEMFC MEA</span>
+      </div>
+      <div class="sidebar-sub">Electrochemical Testing</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Navigation</div>
+        <a class="nav-item active" data-section="overview" onclick="showSection('overview')">
+          <i class="fas fa-diagram-project"></i> Overview / Pipeline
+        </a>
+        <a class="nav-item" data-section="breakin" onclick="showSection('breakin')">
+          <i class="fas fa-bolt"></i> Break-in / BOL
+        </a>
+        <a class="nav-item" data-section="ec" onclick="showSection('ec')">
+          <i class="fas fa-wave-square"></i> Electrochemical Tests
+        </a>
+        <a class="nav-item" data-section="ast" onclick="showSection('ast')">
+          <i class="fas fa-fire"></i> Stress Tests (AST)
+        </a>
+        <a class="nav-item" data-section="builder" onclick="showSection('builder')">
+          <i class="fas fa-wrench"></i> Procedure Builder
+        </a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Quick Info</div>
+        <div style="padding:8px 12px">
+          <div style="font-size:11px;color:var(--text-faint);margin-bottom:4px">Test Blocks</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="inline-tag" style="color:var(--green);background:var(--green-dim)"><span class="nav-dot" style="background:var(--green)"></span>BOL</span>
+            <span class="inline-tag" style="color:var(--blue);background:var(--blue-dim)"><span class="nav-dot" style="background:var(--blue)"></span>EC</span>
+            <span class="inline-tag" style="color:var(--orange);background:var(--orange-dim)"><span class="nav-dot" style="background:var(--orange)"></span>AST</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+        <i class="fas fa-moon" id="themeIcon"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="mainContent">
+    <div class="main-inner">
+
+      <!-- ==================== SECTION 1: OVERVIEW ==================== -->
+      <div class="section active" id="sec-overview">
+        <div class="section-header">
+          <div class="section-title-row">
+            <div>
+              <div class="section-title">Measurement Pipeline</div>
+              <div class="section-desc">Full PEMFC MEA test campaign sequence. Click any block to navigate to its section.</div>
+            </div>
+            <div class="tabs" id="pipelineViewToggle">
+              <button class="tab-btn active" onclick="setPipelineView('template')">Template</button>
+              <button class="tab-btn" onclick="setPipelineView('current')">Current Procedure</button>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-wrapper">
+          <div class="pipeline" id="pipelineContainer"></div>
+        </div>
+      </div>
+
+      <!-- ==================== SECTION 2: BREAK-IN / BOL ==================== -->
+      <div class="section" id="sec-breakin">
+        <div class="section-header">
+          <div class="section-title">Break-in / BOL Conditioning</div>
+          <div class="section-desc">Select a break-in protocol and configure parameters. The step timeline updates dynamically.</div>
+        </div>
+        <div class="tabs" id="bolTabs">
+          <button class="tab-btn active" onclick="switchBolTab(0)">Galv. Ramp</button>
+          <button class="tab-btn" onclick="switchBolTab(1)">Altern BOL</button>
+          <button class="tab-btn" onclick="switchBolTab(2)">OCV Sweep</button>
+          <button class="tab-btn" onclick="switchBolTab(3)">Stoich Sweep</button>
+          <button class="tab-btn" onclick="switchBolTab(4)">Conv. Loop</button>
+        </div>
+        <div id="bolContent"></div>
+      </div>
+
+      <!-- ==================== SECTION 3: EC TESTS ==================== -->
+      <div class="section" id="sec-ec">
+        <div class="section-header">
+          <div class="section-title">Electrochemical Tests</div>
+          <div class="section-desc">Full measurement set per polarization condition. Changes at the POL level propagate to all sub-measurements.</div>
+        </div>
+        <div class="tabs" id="polTabs"></div>
+        <div id="ecContent"></div>
+      </div>
+
+      <!-- ==================== SECTION 4: AST ==================== -->
+      <div class="section" id="sec-ast">
+        <div class="section-header">
+          <div class="section-title">Accelerated Stress Tests</div>
+          <div class="section-desc">DOE-protocol-based degradation tests for catalyst, support, and membrane.</div>
+        </div>
+        <div class="tabs" id="astTabs">
+          <button class="tab-btn active" onclick="switchAstTab(0)"><i class="fas fa-atom" style="margin-right:6px"></i>Catalyst (Pt)</button>
+          <button class="tab-btn" onclick="switchAstTab(1)"><i class="fas fa-cube" style="margin-right:6px"></i>Support (C)</button>
+          <button class="tab-btn" onclick="switchAstTab(2)"><i class="fas fa-layer-group" style="margin-right:6px"></i>Membrane</button>
+        </div>
+        <div id="astContent"></div>
+      </div>
+
+
+      <!-- ==================== SECTION 5: PROCEDURE BUILDER ==================== -->
+      <div class="section" id="sec-builder">
+        <div class="section-header">
+          <div class="section-title-row">
+            <div>
+              <div class="section-title">Procedure Builder</div>
+              <div class="section-desc">Compose a custom test campaign. Select break-in protocols, add/remove/reorder POL+EC blocks, and configure each measurement set individually.</div>
+            </div>
+            <div class="title-actions">
+              <button class="apply-btn" onclick="applyBuilderToEC()"><i class="fas fa-arrow-right" style="margin-right:6px"></i>Apply to EC View</button>
+              <button class="export-btn" style="width:auto;padding:6px 14px" onclick="exportBuilderJSON()"><i class="fas fa-download"></i> Export to eLabFTW</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- eLabFTW Export Metadata -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><div class="card-title"><i class="fas fa-file-export color-blue"></i> eLabFTW Export Metadata</div></div>
+          <div class="note" style="margin-bottom:12px">Always included as-is in the exported JSON, regardless of the procedure.</div>
+          <div class="cond-row" id="exportMetadataForm"></div>
+        </div>
+
+        <!-- Live Pipeline Preview -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><div class="card-title"><i class="fas fa-eye color-blue"></i> Live Campaign Preview</div></div>
+          <div class="builder-pipeline-preview"><div class="preview-flow" id="builderPreviewFlow"></div></div>
+        </div>
+
+        <div class="builder-layout">
+          <!-- LEFT: BOL + AST selectors -->
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><i class="fas fa-bolt color-green"></i> Break-in / BOL Protocols</div>
+                <span class="card-badge bg-green color-green">Multi-select</span>
+              </div>
+              <div class="note" style="margin-bottom:12px">Select one or more break-in protocols. Multiple selections run sequentially.</div>
+              <div class="bol-selector" id="builderBolSelector"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><i class="fas fa-fire color-orange"></i> Stress Tests (AST) Protocols</div>
+                <span class="card-badge bg-orange color-orange">Multi-select</span>
+              </div>
+              <div class="note" style="margin-bottom:12px">Select zero or more AST protocols. Deselect all to skip stress testing entirely.</div>
+              <div class="bol-selector ast-selector" id="builderAstSelector"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT: EC blocks -->
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><i class="fas fa-wave-square color-blue"></i> POL + EC Blocks</div>
+                <span class="card-badge bg-blue color-blue" id="polBlockCount">3 blocks</span>
+              </div>
+              <div class="note" style="margin-bottom:12px">Drag to reorder within a group. Click a block to expand and edit its conditions and sub-measurements (CV, EIS, H₂X).</div>
+
+              <div class="submeas-label" style="margin-bottom:8px">Pre-AST</div>
+              <div class="ec-block-list" id="builderEcBlocksPre" ondragover="dragOver(event)" ondrop="dropBlock(event,'pre')"></div>
+              <button class="add-block-btn" onclick="addPolBlock('pre')">
+                <i class="fas fa-plus"></i> Add POL + EC Block
+              </button>
+
+              <div class="submeas-label" style="margin:18px 0 8px;display:flex;align-items:center;gap:6px;color:var(--orange)">
+                <i class="fas fa-fire"></i> Post-AST (Stability / Aging)
+              </div>
+              <div class="note" style="margin-bottom:12px">Re-run a POL+EC block after AST with the same conditions as an earlier block to evaluate stability/degradation.</div>
+              <div class="ec-block-list" id="builderEcBlocksPost" ondragover="dragOver(event)" ondrop="dropBlock(event,'post')"></div>
+              <button class="add-block-btn post-variant" onclick="addPolBlock('post')">
+                <i class="fas fa-plus"></i> Add POL + EC Block (Post-AST)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ========== GLOBAL STATE ==========
+let currentSection = 'overview';
+let currentBolTab = 0;
+let currentPolBlockId = 1; // references builderBlocks[].id — the single source of truth for POL+EC data
+let currentAstTab = 0;
+
+// ========== THEME ==========
+function toggleTheme(){
+  const html = document.documentElement;
+  const cur = html.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('themeIcon').className = next === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+}
+
+// ========== MOBILE SIDEBAR ==========
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('active');
+}
+
+// ========== NAVIGATION ==========
+function showSection(id){
+  currentSection = id;
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.section === id));
+  document.getElementById('mainContent').scrollTop = 0;
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('active');
+  if(id==='builder'){ renderBuilderBol(); renderBuilderAst(); renderBuilderBlocks(); renderExportMetadataForm(); }
+  if(id==='overview'){ pipelineViewMode === 'current' ? buildLivePipeline() : buildPipeline(); }
+}
+
+// ========== EXPORT ==========
+// ========== PIPELINE ==========
+const pipelineData = [
+  {id:'pretest',label:'PRE-TEST',icon:'fa-clipboard-check',cls:'pm-pretest',nav:null,
+    subs:['Assembly & Torque','Gas Tightness (IEC 62282-2, 700 mbar)','Electrical Isolation','Initial OCV']},
+  {id:'bol',label:'BOL / Break-in',icon:'fa-bolt',cls:'pm-bol',nav:'breakin',badge:'Galv. Ramp',
+    subs:['Activation Cycles','Hydration Phase','Convergence Check']},
+  {id:'pol1',label:'POL1 + EC',icon:'fa-wave-square',cls:'pm-pol',nav:'ec',
+    subs:['Pol Curve (λ=5, RHc=70%)','CV 1.1 (100mV/s, 50–900mV)','CV 1.2 (100mV/s, 0–900mV)','CV 1.3 (20mV/s, 0–900mV)','CV 1.4 (20mV/s, 50–900mV)','EIS @25A','EIS @50A','EIS @75A','H₂ Crossover']},
+  {id:'pol2',label:'POL2 + EC',icon:'fa-wave-square',cls:'pm-pol',nav:'ec',
+    subs:['Pol Curve (λ=3, RHc=15%)','CV 2.1 (100mV/s, 50–900mV)','CV 2.2 (100mV/s, 0–900mV)','CV 2.3 (20mV/s, 0–900mV)','CV 2.4 (20mV/s, 50–900mV)','EIS @25A','EIS @50A','EIS @75A','H₂ Crossover']},
+  {id:'pol3',label:'POL3 + EC',icon:'fa-wave-square',cls:'pm-pol',nav:'ec',
+    subs:['Pol Curve (λ=2, RHc=0%)','CV 3.1 (100mV/s, 50–900mV)','CV 3.2 (100mV/s, 0–900mV)','CV 3.3 (20mV/s, 0–900mV)','CV 3.4 (20mV/s, 50–900mV)','EIS @25A','EIS @50A','EIS @75A','H₂ Crossover']},
+  {id:'ast',label:'AST',icon:'fa-fire',cls:'pm-ast',nav:'ast',
+    subs:['Load Cycling (Pt dissolution)','Start/Stop Cycling (C corrosion)','Diagnostic EC']},
+  {id:'postec',label:'POST-EC',icon:'fa-flag-checkered',cls:'pm-post',nav:null,
+    subs:['Final Pol Curve','Final CV','Final EIS','Final Crossover','Report Generation']}
+];
+
+function renderPipelineBlocks(data){
+  const c = document.getElementById('pipelineContainer');
+  c.innerHTML = '';
+  data.forEach((block, i) => {
+    if(i > 0){
+      const arrow = document.createElement('div');
+      arrow.className = 'pipeline-arrow';
+      arrow.innerHTML = '<i class="fas fa-chevron-right"></i>';
+      c.appendChild(arrow);
+    }
+    const el = document.createElement('div');
+    el.className = 'pipeline-block';
+    const clickAttr = block.onclick || (block.nav ? `showSection('${block.nav}')` : '');
+    let badgeHtml = block.badge ? `<div style="font-size:9px;margin-top:4px;padding:1px 6px;border-radius:99px;background:var(--green-dim);color:var(--green);font-weight:600">${block.badge}</div>` : '';
+    el.innerHTML = `
+      <div class="pipeline-main ${block.cls}" onclick="${clickAttr}" title="${block.label}">
+        <i class="fas ${block.icon}"></i>
+        <div class="pm-label">${block.label}</div>
+        ${badgeHtml}
+      </div>
+      <div class="pipeline-connector"></div>
+      <div class="pipeline-subs">
+        ${block.subs.map(s => `<div class="pipeline-sub" onclick="${clickAttr}">${s}</div>`).join('')}
+      </div>
+    `;
+    c.appendChild(el);
+  });
+}
+
+function buildPipeline(){
+  renderPipelineBlocks(pipelineData);
+}
+
+// Builds the pipeline from the same builderBlocks / BOL / AST selections that drive the
+// Procedure Builder and EC section — so "Current Procedure" always matches what those
+// sections actually contain, with no separate state to keep in sync.
+function buildLivePipelineData(){
+  const data = [];
+  data.push({id:'pretest', label:'PRE-TEST', icon:'fa-clipboard-check', cls:'pm-pretest', nav:null,
+    subs:['Assembly & Torque','Gas Tightness (IEC 62282-2, 700 mbar)','Electrical Isolation','Initial OCV']});
+
+  const selectedBols = builderBolProtocols.filter(p => p.selected);
+  if (selectedBols.length === 0){
+    data.push({id:'bol-none', label:'BOL (none)', icon:'fa-bolt', cls:'pm-bol', nav:'breakin', subs:['No break-in protocol selected']});
+  } else {
+    selectedBols.forEach(p => {
+      const idx = builderBolProtocols.indexOf(p);
+      data.push({id:`bol-${p.id}`, label:p.name.split('(')[0].trim(), icon:'fa-bolt', cls:'pm-bol',
+        onclick:`showSection('breakin');switchBolTab(${idx})`, subs:[p.desc]});
+    });
+  }
+
+  const blockSubs = (block) => {
+    const num = block.label.replace('POL','');
+    const subs = [`Pol Curve (λ=${block.cond.lambda}, RHc=${block.cond.RH_c}%)`];
+    block.cvs.forEach((cv,i) => subs.push(`CV ${num}.${i+1} (${cv.sr}mV/s, ${cv.emin}–${cv.emax}mV)`));
+    block.eis.forEach(e => subs.push(`EIS @${e.dc}A`));
+    if (block.h2x.enabled) subs.push('H₂ Crossover');
+    return subs;
+  };
+  const blockEntry = (block) => {
+    const idx = builderBlocks.indexOf(block);
+    return {id:`pol-${block.id}`, label:`${block.label} + EC`, icon:'fa-wave-square', cls:'pm-pol',
+      onclick:`showSection('ec');switchPolTab(${idx})`, subs: blockSubs(block)};
+  };
+
+  builderBlocks.filter(b => b.phase !== 'post').forEach(b => data.push(blockEntry(b)));
+
+  const selectedAsts = builderAstProtocols.filter(p => p.selected);
+  selectedAsts.forEach(p => {
+    const idx = builderAstProtocols.indexOf(p);
+    data.push({id:`ast-${p.id}`, label:p.name.split('(')[0].trim(), icon:'fa-fire', cls:'pm-ast',
+      onclick:`showSection('ast');switchAstTab(${idx})`, subs:[p.desc]});
+  });
+
+  builderBlocks.filter(b => b.phase === 'post').forEach(b => data.push(blockEntry(b)));
+
+  return data;
+}
+
+function buildLivePipeline(){
+  renderPipelineBlocks(buildLivePipelineData());
+}
+
+let pipelineViewMode = 'template';
+function setPipelineView(mode){
+  pipelineViewMode = mode;
+  document.querySelectorAll('#pipelineViewToggle .tab-btn').forEach((b,i) => b.classList.toggle('active', (mode==='current')===(i===1)));
+  if (mode === 'current') buildLivePipeline(); else buildPipeline();
+}
+
+// ========== BOL PROTOCOLS ==========
+const bolProtocols = [
+  {name:'Galvanostatic Ramp (GSTEP)',desc:'Standard staircase current density ramp',
+    params:{T:80,RH_a:100,RH_c:100,gas_a:'H₂',gas_c:'Air',P:1.5,duration:120,j_start:0.1,j_end:1.5,j_step:0.1,ocv_limit:0.8,conv_crit:2,hold_time:300}},
+  {name:'Altern_BOL (Voltage Cycling)',desc:'Alternating voltage hold at 0.6V and 0.8V',
+    params:{T:80,RH_a:100,RH_c:100,gas_a:'H₂',gas_c:'Air',P:1.5,duration:180,V_low:0.6,V_high:0.8,ocv_limit:0.8,conv_crit:2,hold_time:60}},
+  {name:'OCV Sweep (BOL_VII)',desc:'OCV periods with recovery checks',
+    params:{T:80,RH_a:100,RH_c:100,gas_a:'H₂',gas_c:'Air',P:1.5,duration:90,ocv_limit:0.95,conv_crit:2,hold_time:600,ocv_periods:6}},
+  {name:'Stoichiometric Sweep (BOL_VIII)',desc:'Constant current with varying stoichiometry λ',
+    params:{T:80,RH_a:100,RH_c:100,gas_a:'H₂',gas_c:'Air',P:1.5,duration:150,j_const:0.5,lambda_start:1.5,lambda_end:5,lambda_steps:8,ocv_limit:0.8,conv_crit:2,hold_time:300}},
+  {name:'Convergence Loop (BOL_IX)',desc:'Repeated measurement blocks with convergence checking',
+    params:{T:80,RH_a:100,RH_c:100,gas_a:'H₂',gas_c:'Air',P:1.5,duration:240,j_target:1.0,ocv_limit:0.8,conv_crit:1,hold_time:600,max_loops:10}}
+];
+
+function renderBolSection(){
+  const p = bolProtocols[currentBolTab];
+  const pr = p.params;
+  let paramsHtml = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-sliders color-green"></i> ${p.name}</div>
+        <span class="card-badge bg-green color-green">${p.desc}</span>
+      </div>
+      <table class="param-table">
+        <thead><tr><th>Parameter</th><th>Value</th><th>Unit</th></tr></thead>
+        <tbody>
+          <tr><td class="param-name">Cell Temperature</td><td><input type="number" value="${pr.T}" min="20" max="120" step="1" onchange="updateBolParam('T',this.value)"></td><td class="param-unit">°C</td></tr>
+          <tr><td class="param-name">RH Anode</td><td><input type="number" value="${pr.RH_a}" min="0" max="100" step="1" onchange="updateBolParam('RH_a',this.value)"></td><td class="param-unit">%</td></tr>
+          <tr><td class="param-name">RH Cathode</td><td><input type="number" value="${pr.RH_c}" min="0" max="100" step="1" onchange="updateBolParam('RH_c',this.value)"></td><td class="param-unit">%</td></tr>
+          <tr><td class="param-name">Anode Gas</td><td><input type="text" value="${pr.gas_a}" style="width:60px;text-align:left" onchange="updateBolParam('gas_a',this.value)"></td><td class="param-unit"></td></tr>
+          <tr><td class="param-name">Cathode Gas</td><td><input type="text" value="${pr.gas_c}" style="width:60px;text-align:left" onchange="updateBolParam('gas_c',this.value)"></td><td class="param-unit"></td></tr>
+          <tr><td class="param-name">Pressure</td><td><input type="number" value="${pr.P}" min="1" max="5" step="0.1" onchange="updateBolParam('P',this.value)"></td><td class="param-unit">bar abs</td></tr>
+          <tr><td class="param-name">Total Duration</td><td><input type="number" value="${pr.duration}" min="1" max="1000" step="1" onchange="updateBolParam('duration',this.value)"></td><td class="param-unit">min</td></tr>
+          <tr><td class="param-name">OCV Limit</td><td><input type="number" value="${pr.ocv_limit}" min="0.5" max="1.2" step="0.01" onchange="updateBolParam('ocv_limit',this.value)"></td><td class="param-unit">V</td></tr>
+          <tr><td class="param-name">Convergence Criterion</td><td><input type="number" value="${pr.conv_crit}" min="0.1" max="20" step="0.1" onchange="updateBolParam('conv_crit',this.value)"></td><td class="param-unit">mV/h</td></tr>
+          <tr><td class="param-name">Step Hold Time</td><td><input type="number" value="${pr.hold_time}" min="1" max="3600" step="1" onchange="updateBolParam('hold_time',this.value)"></td><td class="param-unit">s</td></tr>
+          ${currentBolTab===0?`
+          <tr><td class="param-name">Current Start</td><td><input type="number" value="${pr.j_start}" min="0" max="3" step="0.05" onchange="updateBolParam('j_start',this.value)"></td><td class="param-unit">A/cm²</td></tr>
+          <tr><td class="param-name">Current End</td><td><input type="number" value="${pr.j_end}" min="0" max="3" step="0.05" onchange="updateBolParam('j_end',this.value)"></td><td class="param-unit">A/cm²</td></tr>
+          <tr><td class="param-name">Current Step</td><td><input type="number" value="${pr.j_step}" min="0.01" max="1" step="0.01" onchange="updateBolParam('j_step',this.value)"></td><td class="param-unit">A/cm²</td></tr>`:''}
+          ${currentBolTab===1?`
+          <tr><td class="param-name">V Low</td><td><input type="number" value="${pr.V_low}" min="0" max="1.2" step="0.01" onchange="updateBolParam('V_low',this.value)"></td><td class="param-unit">V</td></tr>
+          <tr><td class="param-name">V High</td><td><input type="number" value="${pr.V_high}" min="0" max="1.2" step="0.01" onchange="updateBolParam('V_high',this.value)"></td><td class="param-unit">V</td></tr>`:''}
+          ${currentBolTab===2?`
+          <tr><td class="param-name">OCV Periods</td><td><input type="number" value="${pr.ocv_periods}" min="1" max="30" step="1" onchange="updateBolParam('ocv_periods',this.value)"></td><td class="param-unit"></td></tr>`:''}
+          ${currentBolTab===3?`
+          <tr><td class="param-name">Constant j</td><td><input type="number" value="${pr.j_const}" min="0" max="3" step="0.1" onchange="updateBolParam('j_const',this.value)"></td><td class="param-unit">A/cm²</td></tr>
+          <tr><td class="param-name">λ Start</td><td><input type="number" value="${pr.lambda_start}" min="1" max="10" step="0.1" onchange="updateBolParam('lambda_start',this.value)"></td><td class="param-unit"></td></tr>
+          <tr><td class="param-name">λ End</td><td><input type="number" value="${pr.lambda_end}" min="1" max="10" step="0.1" onchange="updateBolParam('lambda_end',this.value)"></td><td class="param-unit"></td></tr>
+          <tr><td class="param-name">λ Steps</td><td><input type="number" value="${pr.lambda_steps}" min="2" max="30" step="1" onchange="updateBolParam('lambda_steps',this.value)"></td><td class="param-unit"></td></tr>`:''}
+          ${currentBolTab===4?`
+          <tr><td class="param-name">Target j</td><td><input type="number" value="${pr.j_target}" min="0" max="3" step="0.1" onchange="updateBolParam('j_target',this.value)"></td><td class="param-unit">A/cm²</td></tr>
+          <tr><td class="param-name">Max Loops</td><td><input type="number" value="${pr.max_loops}" min="1" max="50" step="1" onchange="updateBolParam('max_loops',this.value)"></td><td class="param-unit"></td></tr>`:''}
+        </tbody>
+      </table>
+    </div>
+  `;
+  let svgHtml = `<div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-chart-line color-green"></i> Step Timeline</div></div><div class="svg-container"><div id="bolSvg"></div></div></div>`;
+  document.getElementById('bolContent').innerHTML = paramsHtml + svgHtml;
+  drawBolSvg();
+}
+
+function updateBolParam(field, value){
+  const p = bolProtocols[currentBolTab];
+  if (!p) return;
+  p.params[field] = (field === 'gas_a' || field === 'gas_c') ? value : parseFloat(value);
+}
+
+function drawBolSvg(){
+  const container = document.getElementById('bolSvg');
+  const W=700, H=220, pad=50, padR=30, padT=30, padB=40;
+  const plotW=W-pad-padR, plotH=H-padT-padB;
+  const textCol = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim();
+  const faintCol = getComputedStyle(document.documentElement).getPropertyValue('--text-faint').trim();
+  const green = getComputedStyle(document.documentElement).getPropertyValue('--green').trim();
+  const blue = getComputedStyle(document.documentElement).getPropertyValue('--blue').trim();
+  const orange = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim();
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+  // Axes
+  svg += `<line x1="${pad}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${faintCol}" stroke-width="1"/>`;
+  svg += `<line x1="${pad}" y1="${padT}" x2="${pad}" y2="${H-padB}" stroke="${faintCol}" stroke-width="1"/>`;
+  svg += `<text x="${W/2}" y="${H-5}" text-anchor="middle" fill="${textCol}" font-size="11">Time</text>`;
+
+  if(currentBolTab === 0){
+    // Galvanostatic Ramp - staircase
+    svg += `<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">j (A/cm²)</text>`;
+    const steps = 15;
+    const stepW = plotW / steps;
+    for(let i=0;i<steps;i++){
+      const x = pad + i*stepW;
+      const yFrac = (i+1)/steps;
+      const y = (H-padB) - yFrac*plotH;
+      svg += `<rect x="${x}" y="${y}" width="${stepW-2}" height="${(H-padB)-y}" fill="${green}" opacity="0.25" rx="1"/>`;
+      svg += `<rect x="${x}" y="${y}" width="${stepW-2}" height="3" fill="${green}" rx="1"/>`;
+      if(i%3===0) svg += `<text x="${x+stepW/2}" y="${y-6}" text-anchor="middle" fill="${green}" font-size="9" font-weight="600">${(0.1*(i+1)).toFixed(1)}</text>`;
+    }
+    svg += `<text x="${W-padR+5}" y="${padT+10}" fill="${green}" font-size="10" font-weight="600">1.5 A/cm²</text>`;
+    // OCV check annotation
+    svg += `<line x1="${pad+plotW*0.5}" y1="${padT}" x2="${pad+plotW*0.5}" y2="${H-padB}" stroke="${orange}" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>`;
+    svg += `<text x="${pad+plotW*0.5+4}" y="${padT+12}" fill="${orange}" font-size="9">OCV check</text>`;
+  } else if(currentBolTab === 1){
+    // Alternating voltage
+    svg += `<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">U (V)</text>`;
+    const cycles = 12;
+    const cycleW = plotW / cycles;
+    for(let i=0;i<cycles;i++){
+      const x = pad + i*cycleW;
+      const yHigh = padT + plotH*0.15;
+      const yLow = padT + plotH*0.65;
+      const y = i%2===0 ? yLow : yHigh;
+      const h = (H-padB)-y;
+      svg += `<rect x="${x+1}" y="${y}" width="${cycleW-2}" height="${h}" fill="${i%2===0?orange:blue}" opacity="0.2" rx="1"/>`;
+      svg += `<rect x="${x+1}" y="${y}" width="${cycleW-2}" height="3" fill="${i%2===0?orange:blue}" rx="1"/>`;
+    }
+    svg += `<text x="${pad-8}" y="${padT+plotH*0.17}" text-anchor="end" fill="${blue}" font-size="9">0.8V</text>`;
+    svg += `<text x="${pad-8}" y="${padT+plotH*0.67}" text-anchor="end" fill="${orange}" font-size="9">0.6V</text>`;
+  } else if(currentBolTab === 2){
+    // OCV Sweep
+    svg += `<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">OCV (V)</text>`;
+    const periods = 6;
+    const pW = plotW / periods;
+    for(let i=0;i<periods;i++){
+      const x = pad + i*pW;
+      const y = padT + 10 + Math.sin(i*0.5)*15;
+      svg += `<rect x="${x+2}" y="${y}" width="${pW*0.7}" height="${(H-padB)-y}" fill="${green}" opacity="0.15" rx="2"/>`;
+      svg += `<line x1="${x+2}" y1="${y}" x2="${x+pW*0.7+2}" y2="${y}" stroke="${green}" stroke-width="2"/>`;
+      // Recovery check
+      const rx = x + pW*0.75;
+      svg += `<rect x="${rx}" y="${padT+plotH*0.3}" width="${pW*0.2}" height="${plotH*0.4}" fill="${blue}" opacity="0.2" rx="2"/>`;
+      svg += `<text x="${rx+pW*0.1}" y="${padT+plotH*0.3-4}" text-anchor="middle" fill="${blue}" font-size="8">Chk</text>`;
+    }
+  } else if(currentBolTab === 3){
+    // Stoich sweep
+    svg += `<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">λ (stoich.)</text>`;
+    const steps = 8;
+    const sW = plotW / steps;
+    for(let i=0;i<steps;i++){
+      const x = pad + i*sW;
+      const lam = 1.5 + i*(3.5/7);
+      const yFrac = lam/5;
+      const y = (H-padB) - yFrac*plotH;
+      svg += `<rect x="${x+2}" y="${y}" width="${sW-4}" height="${(H-padB)-y}" fill="${blue}" opacity="0.2" rx="2"/>`;
+      svg += `<line x1="${x+2}" y1="${y}" x2="${x+sW-2}" y2="${y}" stroke="${blue}" stroke-width="2"/>`;
+      svg += `<text x="${x+sW/2}" y="${y-5}" text-anchor="middle" fill="${blue}" font-size="9" font-weight="600">λ=${lam.toFixed(1)}</text>`;
+    }
+    // Constant current line
+    const jY = (H-padB) - 0.35*plotH;
+    svg += `<line x1="${pad}" y1="${jY}" x2="${W-padR}" y2="${jY}" stroke="${orange}" stroke-width="1.5" stroke-dasharray="6,3"/>`;
+    svg += `<text x="${W-padR+5}" y="${jY+4}" fill="${orange}" font-size="9">j=const</text>`;
+  } else {
+    // Convergence loop
+    svg += `<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">U @ j=1.0</text>`;
+    const loops = 8;
+    const lW = plotW / loops;
+    for(let i=0;i<loops;i++){
+      const x = pad + i*lW;
+      const voltage = 0.65 + 0.02*Math.log(i+1) + 0.005*(Math.random()-0.5);
+      const yFrac = (voltage - 0.55) / 0.2;
+      const y = (H-padB) - yFrac*plotH;
+      svg += `<rect x="${x+3}" y="${y}" width="${lW*0.6}" height="${(H-padB)-y}" fill="${green}" opacity="${0.15+i*0.04}" rx="2"/>`;
+      svg += `<circle cx="${x+lW*0.3+3}" cy="${y}" r="4" fill="${green}" opacity="${0.5+i*0.06}"/>`;
+      if(i < loops-1){
+        // Convergence arrow
+        svg += `<line x1="${x+lW*0.7}" y1="${y+10}" x2="${x+lW*0.9}" y2="${y+5}" stroke="${orange}" stroke-width="1.5" marker-end="none" opacity="0.6"/>`;
+        svg += `<text x="${x+lW*0.8}" y="${y+22}" text-anchor="middle" fill="${orange}" font-size="7" opacity="0.7">Δ${(3-i*0.3).toFixed(1)}</text>`;
+      }
+    }
+    // Convergence threshold line
+    const convY = padT + plotH*0.2;
+    svg += `<line x1="${pad}" y1="${convY}" x2="${W-padR}" y2="${convY}" stroke="${green}" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>`;
+    svg += `<text x="${W-padR+5}" y="${convY+4}" fill="${green}" font-size="9">Conv.</text>`;
+    // Checkmark at end
+    svg += `<text x="${pad+(loops-1)*lW+lW*0.3+3}" y="${padT+10}" fill="${green}" font-size="14">✓</text>`;
+  }
+  svg += `</svg>`;
+  container.innerHTML = svg;
+}
+
+function switchBolTab(i){
+  currentBolTab = i;
+  document.querySelectorAll('#bolTabs .tab-btn').forEach((b,idx) => b.classList.toggle('active', idx===i));
+  renderBolSection();
+}
+
+// ========== EC TESTS ==========
+// builderBlocks (defined in the Procedure Builder section below) is the single source of
+// truth for POL+EC data. This section and the Builder both read/write the same objects,
+// so neither can drift out of sync with the other.
+
+function renderPolTabs(){
+  const tabsEl = document.getElementById('polTabs');
+  if(!tabsEl) return;
+  tabsEl.innerHTML = builderBlocks.map((b,i) =>
+    `<button class="tab-btn ${b.id===currentPolBlockId?'active':''}" onclick="switchPolTab(${i})">${b.label} (λ=${b.cond.lambda}, RH<sub>c</sub>=${b.cond.RH_c}%)</button>`
+  ).join('');
+}
+
+function renderEcSection(){
+  const ecContent = document.getElementById('ecContent');
+  if(!ecContent) return;
+  let block = builderBlocks.find(b => b.id === currentPolBlockId);
+  if(!block) block = builderBlocks[0];
+  if(!block){
+    ecContent.innerHTML = '<div class="note" style="text-align:center">No POL+EC blocks yet — add one in the Procedure Builder.</div>';
+    return;
+  }
+  currentPolBlockId = block.id;
+  const pol = block.cond;
+  let html = '';
+
+  // Pol condition parameters
+  html += `<div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-cog color-blue"></i> ${block.label} Conditions</div></div>
+    <table class="param-table"><thead><tr><th>Parameter</th><th>Value</th><th>Unit</th></tr></thead><tbody>
+      <tr><td class="param-name">Gas Stoichiometry λ</td><td><input type="number" value="${pol.lambda}" min="1" max="10" step="0.5" onchange="updateBlockCond(${block.id},'lambda',this.value)"></td><td class="param-unit"></td></tr>
+      <tr><td class="param-name">RH Cathode</td><td><input type="number" value="${pol.RH_c}" min="0" max="100" step="1" onchange="updateBlockCond(${block.id},'RH_c',this.value)"></td><td class="param-unit">%</td></tr>
+      <tr><td class="param-name">RH Anode</td><td><input type="number" value="${pol.RH_a}" min="0" max="100" step="1" onchange="updateBlockCond(${block.id},'RH_a',this.value)"></td><td class="param-unit">%</td></tr>
+      <tr><td class="param-name">Pressure</td><td><input type="number" value="${pol.P}" min="1" max="5" step="0.1" onchange="updateBlockCond(${block.id},'P',this.value)"></td><td class="param-unit">bar abs</td></tr>
+      <tr><td class="param-name">Temperature</td><td><input type="number" value="${pol.T}" min="20" max="120" step="1" onchange="updateBlockCond(${block.id},'T',this.value)"></td><td class="param-unit">°C</td></tr>
+    </tbody></table></div>`;
+
+  // A) Polarization Curve
+  html += buildExpandable(`pol-curve-${block.id}`, 'fa-chart-line', 'var(--blue)', 'Polarization Curve', 'U vs j',
+    buildPolCurveContent(block));
+
+  // B) Cyclic Voltammetry
+  html += buildExpandable(`cv-${block.id}`, 'fa-rotate', 'var(--green)', 'Cyclic Voltammetry',
+    block.cvs.length === 0 ? 'Skipped' : `${block.cvs.length} measurement${block.cvs.length!==1?'s':''}`,
+    buildCvContent(block));
+
+  // C) EIS
+  html += buildExpandable(`eis-${block.id}`, 'fa-circle-nodes', 'var(--purple)', 'Electrochemical Impedance Spectroscopy',
+    block.eis.length === 0 ? 'Skipped' : `${block.eis.length} measurement${block.eis.length!==1?'s':''}`,
+    buildEisContent(block));
+
+  // D) H2 Crossover
+  html += buildExpandable(`h2x-${block.id}`, 'fa-droplet', 'var(--orange)', 'H₂ Crossover (LSV)',
+    block.h2x.enabled ? 'Linear Sweep' : 'Skipped',
+    buildH2xContent(block));
+
+  ecContent.innerHTML = html;
+  drawPolCurveSvg(block.id);
+  if(block.cvs.length) drawCvSvg(block.id);
+  if(block.eis.length) drawEisSvg(block.id);
+  if(block.h2x.enabled) drawH2xSvg(block.id);
+}
+
+function buildExpandable(id, icon, color, title, badge, content){
+  return `<div class="expandable open" id="exp-${id}">
+    <div class="expandable-header" onclick="toggleExpand('exp-${id}')">
+      <i class="fas fa-chevron-right chevron"></i>
+      <div class="eh-icon" style="background:color-mix(in srgb, ${color} 15%, transparent);color:${color}"><i class="fas ${icon}"></i></div>
+      <div class="eh-title">${title}</div>
+      <span class="eh-badge" style="background:color-mix(in srgb, ${color} 12%, transparent);color:${color}">${badge}</span>
+    </div>
+    <div class="expandable-body"><div class="expandable-inner">${content}</div></div>
+  </div>`;
+}
+
+function toggleExpand(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+function buildPolCurveContent(block){
+  const pc = block.polCurve;
+  return `
+    <div class="grid-2">
+      <table class="param-table"><thead><tr><th>Parameter</th><th>Value</th><th>Unit</th></tr></thead><tbody>
+        <tr><td class="param-name">λ Anode</td><td><input type="number" value="${pc.la}" min="1" max="10" step="0.5" onchange="updatePolCurveParam(${block.id},'la',this.value)"></td><td class="param-unit"></td></tr>
+        <tr><td class="param-name">λ Cathode</td><td><input type="number" value="${pc.lc}" min="1" max="10" step="0.5" onchange="updatePolCurveParam(${block.id},'lc',this.value)"></td><td class="param-unit"></td></tr>
+        <tr><td class="param-name">RH Anode</td><td><input type="number" value="${pc.rha}" min="0" max="100" step="1" onchange="updatePolCurveParam(${block.id},'rha',this.value)"></td><td class="param-unit">%</td></tr>
+        <tr><td class="param-name">RH Cathode</td><td><input type="number" value="${pc.rhc}" min="0" max="100" step="1" onchange="updatePolCurveParam(${block.id},'rhc',this.value)"></td><td class="param-unit">%</td></tr>
+        <tr><td class="param-name">Temperature</td><td><input type="number" value="${pc.T}" min="20" max="120" step="1" onchange="updatePolCurveParam(${block.id},'T',this.value)"></td><td class="param-unit">°C</td></tr>
+        <tr><td class="param-name">Pressure</td><td><input type="number" value="${pc.P}" min="1" max="5" step="0.1" onchange="updatePolCurveParam(${block.id},'P',this.value)"></td><td class="param-unit">bar abs</td></tr>
+        <tr><td class="param-name">OCV Pre-hold</td><td><input type="number" value="${pc.ocvpre}" min="0" max="600" step="10" onchange="updatePolCurveParam(${block.id},'ocvpre',this.value)"></td><td class="param-unit">s</td></tr>
+        <tr><td class="param-name">Hold Time per Step</td><td><input type="number" value="${pc.hold}" min="10" max="600" step="10" onchange="updatePolCurveParam(${block.id},'hold',this.value)"></td><td class="param-unit">s</td></tr>
+        <tr><td class="param-name">Averaging Time</td><td><input type="number" value="${pc.avg}" min="5" max="120" step="5" onchange="updatePolCurveParam(${block.id},'avg',this.value)"></td><td class="param-unit">s</td></tr>
+        <tr><td class="param-name">Current Steps</td><td><input type="text" value="${pc.steps}" style="width:200px;text-align:left" onchange="updatePolCurveParam(${block.id},'steps',this.value)"></td><td class="param-unit">A/cm²</td></tr>
+      </tbody></table>
+      <div class="svg-container"><div class="svg-title">Schematic Polarization Curve</div><div id="polCurveSvg${block.id}"></div></div>
+    </div>`;
+}
+
+function updatePolCurveParam(blockId, field, value){
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (b) b.polCurve[field] = field === 'steps' ? value : parseFloat(value);
+}
+
+function drawPolCurveSvg(n){
+  const el = document.getElementById('polCurveSvg'+n);
+  if(!el) return;
+  const W=380,H=240,pad=50,padR=20,padT=20,padB=35;
+  const pW=W-pad-padR, pH=H-padT-padB;
+  const textCol=cv('--text-muted'), faint=cv('--text-faint'), blue=cv('--blue'), orange=cv('--orange'), green=cv('--green');
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+  // Grid
+  for(let i=0;i<=4;i++){
+    const y=padT+i*(pH/4);
+    svg+=`<line x1="${pad}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="${faint}" stroke-width="0.5" opacity="0.3"/>`;
+    svg+=`<text x="${pad-5}" y="${y+4}" text-anchor="end" fill="${textCol}" font-size="9">${(1.0-i*0.175).toFixed(2)}</text>`;
+  }
+  // Axes labels
+  svg+=`<text x="${W/2}" y="${H-3}" text-anchor="middle" fill="${textCol}" font-size="11">j (A/cm²)</text>`;
+  svg+=`<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">U (V)</text>`;
+  // Pol curve shape
+  let pts=[];
+  for(let j=0;j<=2;j+=0.02){
+    const E0=1.0;
+    const act=0.05*Math.log(j+0.001+1);
+    const ohm=0.15*j;
+    const mt=j>1.4?0.3*Math.pow((j-1.4)/0.6,2):0;
+    const U=Math.max(0.1,E0-act-ohm-mt);
+    const x=pad+(j/2)*pW;
+    const y=padT+((1.0-U)/0.7)*pH;
+    pts.push(`${x},${y}`);
+  }
+  svg+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${blue}" stroke-width="2.5"/>`;
+  // Regions
+  const regY=padT+pH+8;
+  svg+=`<rect x="${pad}" y="${padT}" width="${pW*0.12}" height="${pH}" fill="${green}" opacity="0.08" rx="2"/>`;
+  svg+=`<text x="${pad+pW*0.06}" y="${padT+15}" text-anchor="middle" fill="${green}" font-size="8" font-weight="600">Activation</text>`;
+  svg+=`<rect x="${pad+pW*0.12}" y="${padT}" width="${pW*0.55}" height="${pH}" fill="${blue}" opacity="0.05" rx="2"/>`;
+  svg+=`<text x="${pad+pW*0.4}" y="${padT+15}" text-anchor="middle" fill="${blue}" font-size="8" font-weight="600">Ohmic Region</text>`;
+  svg+=`<rect x="${pad+pW*0.67}" y="${padT}" width="${pW*0.33}" height="${pH}" fill="${orange}" opacity="0.07" rx="2"/>`;
+  svg+=`<text x="${pad+pW*0.83}" y="${padT+15}" text-anchor="middle" fill="${orange}" font-size="8" font-weight="600">Mass Transport</text>`;
+  // Voltage range annotations
+  svg+=`<line x1="${pad}" y1="${padT}" x2="${pad+6}" y2="${padT}" stroke="${blue}" stroke-width="1.5"/>`;
+  svg+=`<text x="${pad+10}" y="${padT+4}" fill="${blue}" font-size="8">~1.0V (OCV)</text>`;
+  svg+=`<line x1="${pad}" y1="${padT+pH*0.85}" x2="${pad+6}" y2="${padT+pH*0.85}" stroke="${orange}" stroke-width="1.5"/>`;
+  svg+=`<text x="${pad+10}" y="${padT+pH*0.85+4}" fill="${orange}" font-size="8">~0.3V</text>`;
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+function buildCvContent(block){
+  const num = block.label.replace('POL','');
+  const tempRow = `<div class="cond-row" style="margin-bottom:12px">
+      <div class="cond-field"><label>Temperature (independent of Pol Curve / EIS)</label><input type="number" value="${block.cvTemperature}" min="20" max="120" step="1" style="width:110px" onchange="updateCvTemperature(${block.id},this.value)"></div>
+    </div>`;
+
+  if (block.cvs.length === 0) {
+    return `${tempRow}
+      <div class="note" style="text-align:center;color:var(--text-faint)">No CV measurements — this test is skipped for ${block.label}.</div>
+      <button class="add-btn" onclick="addCV(${block.id})"><i class="fas fa-plus"></i> Add CV Measurement</button>`;
+  }
+
+  let rows = block.cvs.map((c,i) => `<tr>
+    <td style="font-weight:600">CV ${num}.${i+1}</td>
+    <td><input type="number" value="${c.sr}" min="1" max="500" step="1" style="width:65px" onchange="updateCV(${block.id},${i},'sr',this.value)"></td>
+    <td><input type="number" value="${c.emin}" min="0" max="500" step="10" style="width:65px" onchange="updateCV(${block.id},${i},'emin',this.value)"></td>
+    <td><input type="number" value="${c.emax}" min="100" max="1200" step="10" style="width:65px" onchange="updateCV(${block.id},${i},'emax',this.value)"></td>
+    <td><input type="number" value="${c.cycles}" min="1" max="20" step="1" style="width:50px" onchange="updateCV(${block.id},${i},'cycles',this.value)"></td>
+    <td>N₂</td><td>H₂</td>
+    <td><button class="sm-btn del" onclick="removeCV(${block.id},${i})" title="Remove CV"><i class="fas fa-xmark"></i></button></td>
+    </tr>`).join('');
+
+  return `${tempRow}
+    <table class="param-table"><thead><tr><th>CV</th><th>Scan Rate (mV/s)</th><th>E<sub>min</sub> (mV vs SHE)</th><th>E<sub>max</sub> (mV vs SHE)</th><th>Cycles</th><th>Cathode Gas</th><th>Anode Gas</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <button class="add-btn" onclick="addCV(${block.id})"><i class="fas fa-plus"></i> Add CV Measurement</button>
+    <div class="note">ECSA calculated from H<sub>upd</sub> charge (210 µC/cm²<sub>Pt</sub>). Hydrogen desorption peak area is integrated from the anodic sweep between 50–400 mV vs SHE.</div>
+    <div class="svg-container"><div class="svg-title">Schematic Cyclic Voltammogram</div><div id="cvSvg${block.id}"></div></div>`;
+}
+
+function drawCvSvg(n){
+  const el=document.getElementById('cvSvg'+n);
+  if(!el) return;
+  const W=600,H=260,pad=55,padR=25,padT=25,padB=35;
+  const pW=W-pad-padR, pH=H-padT-padB;
+  const textCol=cv('--text-muted'),faint=cv('--text-faint'),blue=cv('--blue'),green=cv('--green'),orange=cv('--orange'),purple=cv('--purple');
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+  // Axes
+  const zeroY=padT+pH*0.5;
+  svg+=`<line x1="${pad}" y1="${zeroY}" x2="${W-padR}" y2="${zeroY}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<line x1="${pad}" y1="${padT}" x2="${pad}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<text x="${W/2}" y="${H-5}" text-anchor="middle" fill="${textCol}" font-size="11">E (mV vs SHE)</text>`;
+  svg+=`<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">i (mA/cm²)</text>`;
+  // E axis ticks
+  [0,200,400,600,800].forEach(v=>{
+    const x=pad+(v/900)*pW;
+    svg+=`<line x1="${x}" y1="${zeroY-3}" x2="${x}" y2="${zeroY+3}" stroke="${faint}" stroke-width="0.8"/>`;
+    svg+=`<text x="${x}" y="${zeroY+15}" text-anchor="middle" fill="${textCol}" font-size="9">${v}</text>`;
+  });
+
+  // CV curve (schematic)
+  let fwd=[], rev=[];
+  for(let E=50;E<=900;E+=5){
+    const en=(E-50)/850;
+    // Forward (anodic) sweep
+    let iF=0;
+    if(E<150) iF=-30+25*Math.exp(-(E-80)*(E-80)/800); // H desorption peak (negative going up)
+    else if(E<350) iF=-2+8*(en-0.12); // double layer
+    else if(E>650) iF=5+35*Math.pow((en-0.7),1.5); // oxide formation
+    else iF=1+2*en; // flat
+    // Reverse (cathodic) sweep
+    let iR=0;
+    if(E>600) iR=8-25*Math.exp(-(E-720)*(E-720)/2000); // oxide reduction peak
+    else if(E<350 && E>100) iR=-4-3*en;
+    else if(E<150) iR=-35+10*Math.exp(-(E-100)*(E-100)/600); // H adsorption
+    else iR=-2-2*en;
+
+    const xPos=pad+en*pW;
+    const yF=zeroY-iF*(pH*0.4/40);
+    const yR=zeroY-iR*(pH*0.4/40);
+    fwd.push(`${xPos},${yF}`);
+    rev.push(`${xPos},${yR}`);
+  }
+  svg+=`<polyline points="${fwd.join(' ')}" fill="none" stroke="${blue}" stroke-width="2"/>`;
+  svg+=`<polyline points="${rev.reverse().join(' ')}" fill="none" stroke="${green}" stroke-width="2"/>`;
+
+  // Region labels
+  // HUPD region
+  svg+=`<rect x="${pad}" y="${padT}" width="${pW*0.18}" height="${pH}" fill="${green}" opacity="0.06" rx="2"/>`;
+  svg+=`<text x="${pad+pW*0.09}" y="${padT+12}" text-anchor="middle" fill="${green}" font-size="9" font-weight="600">H<tspan font-size="7" dy="2">UPD</tspan></text>`;
+  // Double layer
+  svg+=`<rect x="${pad+pW*0.18}" y="${padT}" width="${pW*0.35}" height="${pH}" fill="${faint}" opacity="0.05" rx="2"/>`;
+  svg+=`<text x="${pad+pW*0.35}" y="${padT+12}" text-anchor="middle" fill="${textCol}" font-size="9" font-weight="600">Double Layer</text>`;
+  // Oxide region
+  svg+=`<rect x="${pad+pW*0.65}" y="${padT}" width="${pW*0.35}" height="${pH}" fill="${orange}" opacity="0.06" rx="2"/>`;
+  svg+=`<text x="${pad+pW*0.82}" y="${padT+12}" text-anchor="middle" fill="${orange}" font-size="9" font-weight="600">Oxide Region</text>`;
+
+  // ECSA integration area (shaded)
+  svg+=`<text x="${pad+pW*0.05}" y="${zeroY+pH*0.35}" fill="${purple}" font-size="9" font-weight="600">← ECSA integration</text>`;
+  // Arrow labels
+  svg+=`<text x="${W-padR-5}" y="${padT+20}" text-anchor="end" fill="${blue}" font-size="9">Anodic →</text>`;
+  svg+=`<text x="${W-padR-5}" y="${H-padB-5}" text-anchor="end" fill="${green}" font-size="9">← Cathodic</text>`;
+
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+function buildEisContent(block){
+  const pol = block.cond;
+  const noteHtml = `<div class="note" id="eisNote${block.id}">Gas conditions: same as parent ${block.label} condition (λ=${pol.lambda}, RH<sub>c</sub>=${pol.RH_c}%, T=${pol.T}°C, P=${pol.P} bar)</div>`;
+
+  if (block.eis.length === 0) {
+    return `<div class="note" style="text-align:center;color:var(--text-faint)">No EIS measurements — this test is skipped for ${block.label}.</div>
+      <button class="add-btn" onclick="addEIS(${block.id})"><i class="fas fa-plus"></i> Add EIS Point</button>`;
+  }
+
+  let rows = block.eis.map((e,i)=>`<tr>
+    <td style="font-weight:600">EIS @${e.dc}A</td>
+    <td><input type="number" value="${e.dc}" min="1" max="200" step="5" style="width:65px" onchange="updateEIS(${block.id},${i},'dc',this.value)"></td>
+    <td><input type="number" value="${e.freqMax}" min="1" max="1000000" step="1" style="width:80px" onchange="updateEIS(${block.id},${i},'freqMax',this.value)"></td>
+    <td><input type="number" value="${e.freqMin}" min="0.001" max="1000" step="0.01" style="width:80px" onchange="updateEIS(${block.id},${i},'freqMin',this.value)"></td>
+    <td><input type="number" value="${e.amp}" min="0.1" max="20" step="0.1" style="width:65px" onchange="updateEIS(${block.id},${i},'amp',this.value)"></td>
+    <td><input type="number" value="${e.ppd}" min="3" max="30" step="1" style="width:50px" onchange="updateEIS(${block.id},${i},'ppd',this.value)"></td>
+    <td><input type="number" value="${e.intCyc}" min="1" max="10" step="1" style="width:50px" onchange="updateEIS(${block.id},${i},'intCyc',this.value)"></td>
+    <td><button class="sm-btn del" onclick="removeEIS(${block.id},${i})" title="Remove EIS"><i class="fas fa-xmark"></i></button></td>
+    </tr>`).join('');
+  return `<table class="param-table"><thead><tr><th>Measurement</th><th>DC Current (A)</th><th>Freq. Max (Hz)</th><th>Freq. Min (Hz)</th><th>AC Amp. (A)</th><th>Pts/Decade</th><th>Int. Cycles</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <button class="add-btn" onclick="addEIS(${block.id})"><i class="fas fa-plus"></i> Add EIS Point</button>
+    ${noteHtml}
+    <div class="svg-container"><div class="svg-title">Schematic Nyquist Plot</div><div id="eisSvg${block.id}"></div></div>`;
+}
+
+function drawEisSvg(n){
+  const el=document.getElementById('eisSvg'+n);
+  if(!el) return;
+  const W=600,H=280,pad=55,padR=25,padT=25,padB=35;
+  const pW=W-pad-padR, pH=H-padT-padB;
+  const textCol=cv('--text-muted'),faint=cv('--text-faint'),blue=cv('--blue'),green=cv('--green'),purple=cv('--purple'),orange=cv('--orange');
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+  svg+=`<line x1="${pad}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<line x1="${pad}" y1="${padT}" x2="${pad}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<text x="${W/2}" y="${H-3}" text-anchor="middle" fill="${textCol}" font-size="11">Z' (Re) [mΩ]</text>`;
+  svg+=`<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">−Z'' (Im) [mΩ]</text>`;
+
+  const colors=[blue,green,purple];
+  const labels=['25A','50A','75A'];
+  const offsets=[0.05,0.04,0.035]; // HFR
+  const r1s=[0.15,0.12,0.10]; // charge transfer radius
+  const r2s=[0.08,0.06,0.05]; // mass transport radius
+
+  colors.forEach((col,ci)=>{
+    const hfr=offsets[ci];
+    const r1=r1s[ci];
+    const r2=r2s[ci];
+    let pts=[];
+    // First semicircle (charge transfer)
+    for(let a=0;a<=Math.PI;a+=0.05){
+      const zr=hfr+r1*(1-Math.cos(a));
+      const zi=r1*Math.sin(a);
+      const x=pad+(zr/0.5)*pW;
+      const y=(H-padB)-(zi/0.25)*pH;
+      pts.push(`${x},${y}`);
+    }
+    // Second semicircle (mass transport)
+    const c2x=hfr+2*r1;
+    for(let a=0;a<=Math.PI*0.85;a+=0.05){
+      const zr=c2x+r2*(1-Math.cos(a));
+      const zi=r2*Math.sin(a);
+      const x=pad+(zr/0.5)*pW;
+      const y=(H-padB)-(zi/0.25)*pH;
+      pts.push(`${x},${y}`);
+    }
+    svg+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="2" opacity="0.85"/>`;
+    // Label
+    const lx=pad+((hfr+r1)/0.5)*pW;
+    const ly=(H-padB)-(r1/0.25)*pH-8;
+    svg+=`<text x="${lx}" y="${ly-2-ci*3}" text-anchor="middle" fill="${col}" font-size="9" font-weight="600">${labels[ci]}</text>`;
+  });
+
+  // Annotations
+  const hfrX=pad+(offsets[0]/0.5)*pW;
+  svg+=`<line x1="${hfrX}" y1="${H-padB}" x2="${hfrX}" y2="${H-padB+12}" stroke="${orange}" stroke-width="1.5"/>`;
+  svg+=`<text x="${hfrX}" y="${H-padB+22}" text-anchor="middle" fill="${orange}" font-size="9" font-weight="600">R<tspan font-size="7" dy="2">ohm</tspan></text>`;
+
+  const rctX=pad+((offsets[0]+r1s[0])/0.5)*pW;
+  svg+=`<text x="${rctX}" y="${padT+10}" fill="${blue}" font-size="9" font-weight="600">R<tspan font-size="7" dy="2">ct</tspan></text>`;
+  svg+=`<line x1="${rctX}" y1="${padT+14}" x2="${rctX}" y2="${padT+30}" stroke="${blue}" stroke-width="1" marker-end="none" opacity="0.5"/>`;
+
+  const rmtX=pad+((offsets[0]+2*r1s[0]+r2s[0])/0.5)*pW;
+  svg+=`<text x="${rmtX}" y="${padT+10}" fill="${green}" font-size="9" font-weight="600">R<tspan font-size="7" dy="2">mt</tspan></text>`;
+  svg+=`<line x1="${rmtX}" y1="${padT+14}" x2="${rmtX}" y2="${padT+30}" stroke="${green}" stroke-width="1" opacity="0.5"/>`;
+
+  // HFR arrow
+  svg+=`<line x1="${pad}" y1="${H-padB-3}" x2="${hfrX}" y2="${H-padB-3}" stroke="${orange}" stroke-width="1" marker-end="none"/>`;
+  svg+=`<text x="${(pad+hfrX)/2}" y="${H-padB-8}" text-anchor="middle" fill="${orange}" font-size="8">HFR</text>`;
+
+  // Frequency direction
+  svg+=`<text x="${W-padR-5}" y="${H-padB-5}" text-anchor="end" fill="${faint}" font-size="8">← Low freq</text>`;
+  svg+=`<text x="${pad+5}" y="${H-padB-5}" fill="${faint}" font-size="8">High freq →</text>`;
+
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+function buildH2xContent(block){
+  const h = block.h2x;
+  const toggleBtn = `<button class="sm-btn ${h.enabled ? 'del' : ''}" style="width:auto;padding:4px 10px;gap:6px;display:inline-flex;align-items:center" onclick="toggleH2X(${block.id})" title="${h.enabled ? 'Disable H2 Crossover test' : 'Enable H2 Crossover test'}">
+    <i class="fas fa-${h.enabled ? 'eye' : 'eye-slash'}"></i> ${h.enabled ? 'Enabled' : 'Disabled'}
+  </button>`;
+
+  if (!h.enabled) {
+    return `<div style="margin-bottom:10px">${toggleBtn}</div>
+      <div class="note" style="text-align:center;color:var(--text-faint)">H₂ Crossover test disabled for ${block.label}.</div>`;
+  }
+
+  return `<div style="margin-bottom:10px">${toggleBtn}</div>
+  <table class="param-table"><thead><tr><th>Parameter</th><th>Value</th><th>Unit</th></tr></thead><tbody>
+    <tr><td class="param-name">Scan Rate</td><td><input type="number" value="${h.sr}" min="0.1" max="10" step="0.1" onchange="updateBlockH2X(${block.id},'sr',this.value)"></td><td class="param-unit">mV/s</td></tr>
+    <tr><td class="param-name">E Start</td><td><input type="number" value="${h.estart}" min="0" max="0.5" step="0.01" onchange="updateBlockH2X(${block.id},'estart',this.value)"></td><td class="param-unit">V vs SHE</td></tr>
+    <tr><td class="param-name">E End</td><td><input type="number" value="${h.eend}" min="0.3" max="1" step="0.01" onchange="updateBlockH2X(${block.id},'eend',this.value)"></td><td class="param-unit">V vs SHE</td></tr>
+    <tr><td class="param-name">Cathode Gas</td><td><input type="text" value="N₂ (humidified)" style="width:120px;text-align:left"></td><td class="param-unit"></td></tr>
+    <tr><td class="param-name">Anode Gas</td><td><input type="text" value="H₂" style="width:60px;text-align:left"></td><td class="param-unit"></td></tr>
+    <tr><td class="param-name">Temperature</td><td><input type="number" value="${h.T}" min="20" max="120" step="1" onchange="updateBlockH2X(${block.id},'T',this.value)"></td><td class="param-unit">°C</td></tr>
+    <tr><td class="param-name">Pressure</td><td><input type="number" value="${h.P}" min="1" max="5" step="0.1" onchange="updateBlockH2X(${block.id},'P',this.value)"></td><td class="param-unit">bar abs</td></tr>
+    <tr><td class="param-name">Acceptance Criterion</td><td><input type="number" value="${h.accept}" min="0.1" max="10" step="0.1" onchange="updateBlockH2X(${block.id},'accept',this.value)"></td><td class="param-unit">mA/cm²</td></tr>
+  </tbody></table>
+  <div class="svg-container"><div class="svg-title">Schematic LSV — H₂ Crossover</div><div id="h2xSvg${block.id}"></div></div>`;
+}
+
+function drawH2xSvg(n){
+  const el=document.getElementById('h2xSvg'+n);
+  if(!el) return;
+  const W=500,H=200,pad=55,padR=25,padT=25,padB=35;
+  const pW=W-pad-padR, pH=H-padT-padB;
+  const textCol=cv('--text-muted'),faint=cv('--text-faint'),blue=cv('--blue'),orange=cv('--orange'),red=cv('--red');
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+  svg+=`<line x1="${pad}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<line x1="${pad}" y1="${padT}" x2="${pad}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<text x="${W/2}" y="${H-3}" text-anchor="middle" fill="${textCol}" font-size="11">E (V vs SHE)</text>`;
+  svg+=`<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">i (mA/cm²)</text>`;
+
+  // LSV curve (flat plateau)
+  let pts=[];
+  for(let E=0.05;E<=0.6;E+=0.005){
+    const en=(E-0.05)/0.55;
+    let i_val;
+    if(E<0.15) i_val=0.8*Math.pow(en*1.82,0.5);
+    else i_val=0.8+0.15*en;
+    const x=pad+en*pW;
+    const y=(H-padB)-(i_val/3)*pH;
+    pts.push(`${x},${y}`);
+  }
+  svg+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${blue}" stroke-width="2.5"/>`;
+  // Crossover plateau annotation
+  const platY=(H-padB)-(0.85/3)*pH;
+  svg+=`<line x1="${pad+pW*0.25}" y1="${platY}" x2="${W-padR}" y2="${platY}" stroke="${blue}" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>`;
+  svg+=`<text x="${W-padR-5}" y="${platY-5}" text-anchor="end" fill="${blue}" font-size="9">H₂ crossover flux</text>`;
+
+  // Acceptance threshold
+  const threshY=(H-padB)-(2/3)*pH;
+  svg+=`<line x1="${pad}" y1="${threshY}" x2="${W-padR}" y2="${threshY}" stroke="${red}" stroke-width="1.5" stroke-dasharray="6,3"/>`;
+  svg+=`<text x="${pad+5}" y="${threshY-5}" fill="${red}" font-size="9" font-weight="600">Acceptance: 2 mA/cm² (PASS)</text>`;
+
+  // E axis ticks
+  [0.1,0.2,0.3,0.4,0.5,0.6].forEach(v=>{
+    const x=pad+((v-0.05)/0.55)*pW;
+    svg+=`<text x="${x}" y="${H-padB+14}" text-anchor="middle" fill="${textCol}" font-size="9">${v.toFixed(1)}</text>`;
+  });
+
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+// updateBlockCond is the single mutator for a block's nominal gas/RH/T/P condition.
+// It only refreshes the read-only mirrors of that condition (badge, EIS note, tab label) —
+// Pol Curve / CV / H2X keep their own independently-editable fields (seeded from cond only
+// at block creation) and are intentionally NOT overwritten here.
+function updateBlockCond(blockId, field, value) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (!b) return;
+  b.cond[field] = parseFloat(value);
+  const c = b.cond;
+
+  renderBuilderPreview();
+  const headerEl = document.querySelector(`#ecblock_${blockId} .block-badge`);
+  if (headerEl) headerEl.innerHTML = `λ=${c.lambda} | RH<sub>c</sub>=${c.RH_c}% | ${c.T}°C | ${c.P}bar`;
+
+  const eisNote = document.getElementById(`eisNote${blockId}`);
+  if (eisNote) eisNote.innerHTML = `Gas conditions: same as parent ${b.label} condition (λ=${c.lambda}, RH<sub>c</sub>=${c.RH_c}%, T=${c.T}°C, P=${c.P} bar)`;
+
+  const idx = builderBlocks.indexOf(b);
+  const tabBtns = document.querySelectorAll('#polTabs .tab-btn');
+  if (tabBtns[idx]) tabBtns[idx].innerHTML = `${b.label} (λ=${c.lambda}, RH<sub>c</sub>=${c.RH_c}%)`;
+}
+
+function switchPolTab(i){
+  const b = builderBlocks[i];
+  if(!b) return;
+  currentPolBlockId = b.id;
+  document.querySelectorAll('#polTabs .tab-btn').forEach((btn,idx) => btn.classList.toggle('active', idx===i));
+  renderEcSection();
+}
+
+// ========== AST ==========
+function renderAstSection(){
+  let html='';
+  if(currentAstTab===0) html=buildCatalystAst();
+  else if(currentAstTab===1) html=buildSupportAst();
+  else html=buildMembraneAst();
+  document.getElementById('astContent').innerHTML=html;
+  if(currentAstTab===0) drawCatalystAstSvg();
+  else if(currentAstTab===1) drawSupportAstSvg();
+  else drawMembraneAstSvg();
+}
+
+function buildCatalystAst(){
+  const p = astProtocolDefaults[0];
+  return `<div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-atom color-orange"></i> Catalyst AST — Pt Dissolution (Load Cycling)</div><span class="card-badge bg-orange color-orange">DOE / FC-PAD</span></div>
+    <div class="grid-2"><table class="param-table"><thead><tr><th>Parameter</th><th>Value</th><th>Unit</th></tr></thead><tbody>
+      <tr><td class="param-name">Waveform</td><td><select onchange="updateAstParam(0,'waveform',this.value)">
+        <option ${p.waveform==='Square wave'?'selected':''}>Square wave</option>
+        <option ${p.waveform==='Triangular'?'selected':''}>Triangular</option>
+      </select></td><td class="param-unit"></td></tr>
+      <tr><td class="param-name">E Low</td><td><input type="number" value="${p.E_low_V}" min="0" max="1.2" step="0.01" onchange="updateAstParam(0,'E_low_V',this.value)"></td><td class="param-unit">V</td></tr>
+      <tr><td class="param-name">E High</td><td><input type="number" value="${p.E_high_V}" min="0" max="1.5" step="0.01" onchange="updateAstParam(0,'E_high_V',this.value)"></td><td class="param-unit">V</td></tr>
+      <tr><td class="param-name">Hold Time Low</td><td><input type="number" value="${p.hold_low_s}" min="1" max="60" step="1" onchange="updateAstParam(0,'hold_low_s',this.value)"></td><td class="param-unit">s</td></tr>
+      <tr><td class="param-name">Hold Time High</td><td><input type="number" value="${p.hold_high_s}" min="1" max="60" step="1" onchange="updateAstParam(0,'hold_high_s',this.value)"></td><td class="param-unit">s</td></tr>
+      <tr><td class="param-name">Total Cycles</td><td><input type="number" value="${p.total_cycles}" min="100" max="100000" step="100" onchange="updateAstParam(0,'total_cycles',this.value)"></td><td class="param-unit"></td></tr>
+      <tr><td class="param-name">Temperature</td><td><input type="number" value="${p.T_degC}" min="20" max="120" step="1" onchange="updateAstParam(0,'T_degC',this.value)"></td><td class="param-unit">°C</td></tr>
+      <tr><td class="param-name">RH</td><td><input type="number" value="${p.RH_pct}" min="0" max="100" step="1" onchange="updateAstParam(0,'RH_pct',this.value)"></td><td class="param-unit">%</td></tr>
+      <tr><td class="param-name">Diagnostic Interval</td><td><input type="number" value="${p.diag_interval_cycles}" min="100" max="30000" step="100" onchange="updateAstParam(0,'diag_interval_cycles',this.value)"></td><td class="param-unit">cycles</td></tr>
+    </tbody></table>
+    <div class="svg-container"><div class="svg-title">Square Wave Potential Protocol</div><div id="astCatSvg"></div></div></div>
+    <div class="note" style="margin-top:12px"><strong>Degradation mechanisms:</strong> Pt dissolution occurs via electrochemical Ostwald ripening — smaller Pt nanoparticles dissolve and redeposit on larger particles, reducing ECSA. Repeated potential cycling between 0.6V and 0.95V accelerates this process by repeatedly oxidizing and reducing the Pt surface.</div>
+  </div>`;
+}
+
+function drawCatalystAstSvg(){
+  const el=document.getElementById('astCatSvg');
+  if(!el) return;
+  const W=380,H=220,pad=50,padR=20,padT=25,padB=35;
+  const pW=W-pad-padR, pH=H-padT-padB;
+  const textCol=cv('--text-muted'),faint=cv('--text-faint'),orange=cv('--orange'),blue=cv('--blue'),purple=cv('--purple');
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+  svg+=`<line x1="${pad}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<line x1="${pad}" y1="${padT}" x2="${pad}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<text x="${W/2}" y="${H-3}" text-anchor="middle" fill="${textCol}" font-size="11">Time (s)</text>`;
+  svg+=`<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">E (V)</text>`;
+
+  const yHigh=padT+pH*0.15;
+  const yLow=padT+pH*0.65;
+  svg+=`<text x="${pad-5}" y="${yHigh+4}" text-anchor="end" fill="${orange}" font-size="9">0.95V</text>`;
+  svg+=`<text x="${pad-5}" y="${yLow+4}" text-anchor="end" fill="${orange}" font-size="9">0.60V</text>`;
+
+  // Square wave
+  const cycles=8;
+  const cycW=pW/cycles;
+  let path=`M ${pad} ${yLow}`;
+  for(let i=0;i<cycles;i++){
+    const x=pad+i*cycW;
+    path+=` L ${x} ${yHigh} L ${x+cycW*0.5} ${yHigh} L ${x+cycW*0.5} ${yLow} L ${x+cycW} ${yLow}`;
+  }
+  svg+=`<path d="${path}" fill="none" stroke="${orange}" stroke-width="2"/>`;
+
+  // Shaded regions
+  for(let i=0;i<cycles;i++){
+    const x=pad+i*cycW;
+    svg+=`<rect x="${x}" y="${yHigh}" width="${cycW*0.5}" height="${yLow-yHigh}" fill="${orange}" opacity="0.08"/>`;
+  }
+
+  // Annotations
+  svg+=`<text x="${pad+pW*0.35}" y="${yHigh-8}" fill="${purple}" font-size="8" font-weight="600">↑ Pt oxide formation</text>`;
+  svg+=`<text x="${pad+pW*0.35}" y="${yLow+16}" fill="${blue}" font-size="8" font-weight="600">↓ Pt oxide reduction (dissolution)</text>`;
+
+  // Diagnostic marker
+  const diagX=pad+pW*0.6;
+  svg+=`<line x1="${diagX}" y1="${padT}" x2="${diagX}" y2="${H-padB}" stroke="${blue}" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>`;
+  svg+=`<text x="${diagX+3}" y="${padT+10}" fill="${blue}" font-size="8">Diagnostic EC</text>`;
+
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+function buildSupportAst(){
+  const p = astProtocolDefaults[1];
+  return `<div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-cube color-orange"></i> Support AST — Carbon Corrosion (Start/Stop)</div><span class="card-badge bg-orange color-orange">DOE Start-up/Shut-down</span></div>
+    <div class="grid-2"><table class="param-table"><thead><tr><th>Parameter</th><th>Value</th><th>Unit</th></tr></thead><tbody>
+      <tr><td class="param-name">Waveform</td><td><select onchange="updateAstParam(1,'waveform',this.value)">
+        <option ${p.waveform==='Triangular sweep'?'selected':''}>Triangular sweep</option>
+        <option ${p.waveform==='Square wave'?'selected':''}>Square wave</option>
+      </select></td><td class="param-unit"></td></tr>
+      <tr><td class="param-name">E Low</td><td><input type="number" value="${p.E_low_V}" min="0.5" max="1.5" step="0.01" onchange="updateAstParam(1,'E_low_V',this.value)"></td><td class="param-unit">V</td></tr>
+      <tr><td class="param-name">E High</td><td><input type="number" value="${p.E_high_V}" min="1" max="2" step="0.01" onchange="updateAstParam(1,'E_high_V',this.value)"></td><td class="param-unit">V</td></tr>
+      <tr><td class="param-name">Scan Rate</td><td><input type="number" value="${p.scan_rate_mV_s}" min="10" max="2000" step="10" onchange="updateAstParam(1,'scan_rate_mV_s',this.value)"></td><td class="param-unit">mV/s</td></tr>
+      <tr><td class="param-name">Total Cycles</td><td><input type="number" value="${p.total_cycles}" min="100" max="50000" step="100" onchange="updateAstParam(1,'total_cycles',this.value)"></td><td class="param-unit"></td></tr>
+      <tr><td class="param-name">Temperature</td><td><input type="number" value="${p.T_degC}" min="20" max="120" step="1" onchange="updateAstParam(1,'T_degC',this.value)"></td><td class="param-unit">°C</td></tr>
+      <tr><td class="param-name">Diagnostic Interval</td><td><input type="number" value="${p.diag_interval_cycles}" min="100" max="5000" step="100" onchange="updateAstParam(1,'diag_interval_cycles',this.value)"></td><td class="param-unit">cycles</td></tr>
+    </tbody></table>
+    <div class="svg-container"><div class="svg-title">Triangular Wave Protocol</div><div id="astSupSvg"></div></div></div>
+    <div class="note" style="margin-top:12px"><strong>Degradation mechanism:</strong> At potentials above 1.0V vs RHE, carbon support undergoes electrochemical oxidation: C + 2H₂O → CO₂ + 4H⁺ + 4e⁻. This leads to loss of catalyst support structure, Pt particle detachment, and increased mass transport losses.</div>
+  </div>`;
+}
+
+function drawSupportAstSvg(){
+  const el=document.getElementById('astSupSvg');
+  if(!el) return;
+  const W=380,H=220,pad=50,padR=20,padT=25,padB=35;
+  const pW=W-pad-padR, pH=H-padT-padB;
+  const textCol=cv('--text-muted'),faint=cv('--text-faint'),orange=cv('--orange'),blue=cv('--blue');
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+  svg+=`<line x1="${pad}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<line x1="${pad}" y1="${padT}" x2="${pad}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<text x="${W/2}" y="${H-3}" text-anchor="middle" fill="${textCol}" font-size="11">Time (s)</text>`;
+  svg+=`<text x="12" y="${H/2}" text-anchor="middle" fill="${textCol}" font-size="11" transform="rotate(-90,12,${H/2})">E (V)</text>`;
+
+  const yHigh=padT+pH*0.1;
+  const yLow=padT+pH*0.7;
+  svg+=`<text x="${pad-5}" y="${yHigh+4}" text-anchor="end" fill="${orange}" font-size="9">1.5V</text>`;
+  svg+=`<text x="${pad-5}" y="${yLow+4}" text-anchor="end" fill="${orange}" font-size="9">1.0V</text>`;
+
+  // Triangular wave
+  const cycles=6;
+  const cycW=pW/cycles;
+  let path=`M ${pad} ${yLow}`;
+  for(let i=0;i<cycles;i++){
+    const x=pad+i*cycW;
+    path+=` L ${x+cycW*0.5} ${yHigh} L ${x+cycW} ${yLow}`;
+  }
+  svg+=`<path d="${path}" fill="none" stroke="${orange}" stroke-width="2"/>`;
+  // Fill
+  for(let i=0;i<cycles;i++){
+    const x=pad+i*cycW;
+    svg+=`<polygon points="${x},${yLow} ${x+cycW*0.5},${yHigh} ${x+cycW},${yLow}" fill="${orange}" opacity="0.06"/>`;
+  }
+
+  // Annotations
+  svg+=`<text x="${pad+pW*0.25}" y="${yHigh-6}" fill="${orange}" font-size="8" font-weight="600">C + 2H₂O → CO₂ + 4H⁺ + 4e⁻</text>`;
+
+  // Diagnostic
+  const diagX=pad+pW*0.5;
+  svg+=`<line x1="${diagX}" y1="${padT}" x2="${diagX}" y2="${H-padB}" stroke="${blue}" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>`;
+  svg+=`<text x="${diagX+3}" y="${padT+10}" fill="${blue}" font-size="8">Diagnostic @ 1000 cyc</text>`;
+
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+function buildMembraneAst(){
+  const p = astProtocolDefaults[2];
+  return `<div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-layer-group color-orange"></i> Membrane AST — OCV Hold</div><span class="card-badge bg-orange color-orange">Chemical Degradation</span></div>
+    <div class="grid-2"><table class="param-table"><thead><tr><th>Parameter</th><th>Value</th><th>Unit</th></tr></thead><tbody>
+      <tr><td class="param-name">OCV Hold Duration</td><td><input type="number" value="${p.ocv_hold_duration_h}" min="1" max="1000" step="1" onchange="updateAstParam(2,'ocv_hold_duration_h',this.value)"></td><td class="param-unit">h</td></tr>
+      <tr><td class="param-name">RH Low</td><td><input type="number" value="${p.RH_low_pct}" min="0" max="50" step="1" onchange="updateAstParam(2,'RH_low_pct',this.value)"></td><td class="param-unit">%</td></tr>
+      <tr><td class="param-name">RH High</td><td><input type="number" value="${p.RH_high_pct}" min="50" max="100" step="1" onchange="updateAstParam(2,'RH_high_pct',this.value)"></td><td class="param-unit">%</td></tr>
+      <tr><td class="param-name">RH Cycle Period</td><td><input type="number" value="${p.RH_cycle_period_min}" min="0.5" max="30" step="0.5" onchange="updateAstParam(2,'RH_cycle_period_min',this.value)"></td><td class="param-unit">min</td></tr>
+      <tr><td class="param-name">Temperature</td><td><input type="number" value="${p.T_degC}" min="20" max="120" step="1" onchange="updateAstParam(2,'T_degC',this.value)"></td><td class="param-unit">°C</td></tr>
+      <tr><td class="param-name">Diagnostic Interval</td><td><input type="number" value="${p.diag_interval_h}" min="1" max="100" step="1" onchange="updateAstParam(2,'diag_interval_h',this.value)"></td><td class="param-unit">h</td></tr>
+      <tr><td class="param-name">Crossover Criterion</td><td><input type="number" value="${p.crossover_criterion_mA_cm2}" min="0.5" max="20" step="0.5" onchange="updateAstParam(2,'crossover_criterion_mA_cm2',this.value)"></td><td class="param-unit">mA/cm²</td></tr>
+    </tbody></table>
+    <div class="svg-container"><div class="svg-title">OCV Hold with RH Cycling</div><div id="astMemSvg"></div></div></div>
+    <div class="note" style="margin-top:12px"><strong>Degradation mechanism:</strong> OCV conditions produce H₂O₂ and radical species (·OH, ·OOH) that attack the polymer membrane, causing chemical degradation and thinning. RH cycling adds mechanical stress through membrane swelling/shrinking. Diagnostics track OCV decay and H₂ crossover increase.</div>
+  </div>`;
+}
+
+function drawMembraneAstSvg(){
+  const el=document.getElementById('astMemSvg');
+  if(!el) return;
+  const W=380,H=220,pad=50,padR=20,padT=25,padB=35;
+  const pW=W-pad-padR, pH=H-padT-padB;
+  const textCol=cv('--text-muted'),faint=cv('--text-faint'),orange=cv('--orange'),blue=cv('--blue'),green=cv('--green'),purple=cv('--purple');
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+  svg+=`<line x1="${pad}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<line x1="${pad}" y1="${padT}" x2="${pad}" y2="${H-padB}" stroke="${faint}" stroke-width="0.8"/>`;
+  svg+=`<text x="${W/2}" y="${H-3}" text-anchor="middle" fill="${textCol}" font-size="11">Time (h)</text>`;
+  svg+=`<text x="12" y="${H/2-20}" text-anchor="middle" fill="${textCol}" font-size="10" transform="rotate(-90,12,${H/2-20})">OCV (V)</text>`;
+
+  // OCV line with slight decay
+  const ocvY1=padT+pH*0.15;
+  const ocvY2=padT+pH*0.3;
+  svg+=`<line x1="${pad}" y1="${ocvY1}" x2="${W-padR}" y2="${ocvY2}" stroke="${orange}" stroke-width="2"/>`;
+  svg+=`<text x="${pad+5}" y="${ocvY1-5}" fill="${orange}" font-size="9" font-weight="600">OCV ≈ 0.95V</text>`;
+  svg+=`<text x="${W-padR-5}" y="${ocvY2-5}" text-anchor="end" fill="${orange}" font-size="9" opacity="0.7">decay</text>`;
+
+  // RH cycling overlay (bottom half)
+  const rhBase=padT+pH*0.55;
+  const rhAmp=pH*0.25;
+  let rhPath=`M ${pad} ${rhBase}`;
+  for(let t=0;t<=1;t+=0.005){
+    const x=pad+t*pW;
+    const rh=rhBase-rhAmp*0.5*(1+Math.sin(t*40*Math.PI));
+    rhPath+=` L ${x} ${rh}`;
+  }
+  svg+=`<path d="${rhPath}" fill="none" stroke="${blue}" stroke-width="1.5" opacity="0.6"/>`;
+  svg+=`<text x="${W-padR-5}" y="${rhBase-rhAmp-3}" text-anchor="end" fill="${blue}" font-size="9">RH 90%</text>`;
+  svg+=`<text x="${W-padR-5}" y="${rhBase+12}" text-anchor="end" fill="${blue}" font-size="9">RH 2%</text>`;
+  svg+=`<text x="${pad+pW*0.5}" y="${rhBase+rhAmp*0.5+18}" text-anchor="middle" fill="${blue}" font-size="8" opacity="0.7">RH cycling (2 min period)</text>`;
+
+  // Diagnostic markers
+  for(let d=1;d<=8;d++){
+    const dx=pad+(d/8)*pW*0.95;
+    svg+=`<line x1="${dx}" y1="${padT}" x2="${dx}" y2="${padT+10}" stroke="${green}" stroke-width="2" opacity="0.5"/>`;
+  }
+  svg+=`<text x="${pad+pW*0.5}" y="${padT+10}" text-anchor="middle" fill="${green}" font-size="8">↑ Diagnostics every 24h</text>`;
+
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+function switchAstTab(i){
+  currentAstTab = i;
+  document.querySelectorAll('#astTabs .tab-btn').forEach((b,idx) => b.classList.toggle('active', idx===i));
+  renderAstSection();
+}
+
+// ========== HELPERS ==========
+function cv(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+
+// ========== PROCEDURE BUILDER STATE ==========
+const builderBolProtocols = [
+  {id:'gstep', name:'Galvanostatic Ramp (GSTEP)', desc:'Staircase current ramp, standard activation', icon:'fa-stairs', selected:true},
+  {id:'altern', name:'Altern_BOL (Voltage Cycling)', desc:'Alternating 0.6V / 0.8V hold cycling', icon:'fa-arrows-up-down', selected:false},
+  {id:'ocvsweep', name:'OCV Sweep (BOL_VII)', desc:'OCV hold periods with recovery checks', icon:'fa-wave-square', selected:false},
+  {id:'stoich', name:'Stoichiometric Sweep (BOL_VIII)', desc:'Constant j with varying λ', icon:'fa-sliders', selected:false},
+  {id:'conv', name:'Convergence Loop (BOL_IX)', desc:'Repeated blocks until voltage stable', icon:'fa-rotate', selected:false}
+];
+
+const builderAstProtocols = [
+  {id:'catalyst', name:'Catalyst AST (Pt Dissolution)', desc:'Square-wave load cycling 0.6–0.95V — accelerates Pt dissolution / Ostwald ripening', icon:'fa-atom', selected:true},
+  {id:'support', name:'Support AST (Carbon Corrosion)', desc:'Start/stop triangular sweep 1.0–1.5V — accelerates carbon support corrosion', icon:'fa-cube', selected:true},
+  {id:'membrane', name:'Membrane AST (OCV Hold)', desc:'Extended OCV hold with RH cycling — accelerates chemical membrane degradation', icon:'fa-layer-group', selected:false}
+];
+
+// Live parameter state for the AST protocols (indices match builderAstProtocols: 0=Catalyst,
+// 1=Support, 2=Membrane). The dedicated AST section's inputs write directly into this array
+// via updateAstParam, so edits persist and are picked up by the eLabFTW export.
+const astProtocolDefaults = [
+  {waveform:'Square wave', E_low_V:0.6, E_high_V:0.95, hold_low_s:3, hold_high_s:3, total_cycles:30000, T_degC:80, RH_pct:100, diag_interval_cycles:5000},
+  {waveform:'Triangular sweep', E_low_V:1.0, E_high_V:1.5, scan_rate_mV_s:500, total_cycles:5000, T_degC:80, diag_interval_cycles:1000},
+  {ocv_hold_duration_h:200, RH_low_pct:2, RH_high_pct:90, RH_cycle_period_min:2, T_degC:90, diag_interval_h:24, crossover_criterion_mA_cm2:4}
+];
+
+function updateAstParam(idx, field, value){
+  const p = astProtocolDefaults[idx];
+  if (!p) return;
+  p[field] = field === 'waveform' ? value : parseFloat(value);
+}
+
+// ========== EXPORT METADATA (fixed fields, always present in the exported JSON) ==========
+let exportMetadata = {
+  project: '', owner: '', experimenter: '', sampleName: '',
+  teststandNr: '', resultsPath: '', shortname: ''
+};
+
+function updateExportMetadata(field, value){
+  exportMetadata[field] = value;
+}
+
+function renderExportMetadataForm(){
+  const el = document.getElementById('exportMetadataForm');
+  if(!el) return;
+  const fields = [
+    ['project','Project'], ['owner','Owner'], ['experimenter','Experimenter'],
+    ['sampleName','Sample Name'], ['teststandNr','Teststand Nr.'],
+    ['resultsPath','Results storage path'], ['shortname','Procedure shortname']
+  ];
+  el.innerHTML = fields.map(([key,label]) => `
+    <div class="cond-field"><label>${label}</label><input type="text" value="${exportMetadata[key]}" style="width:150px" onchange="updateExportMetadata('${key}',this.value)"></div>
+  `).join('');
+}
+
+// Default CV templates
+const defaultCVs = () => [
+  {sr:100, emin:50, emax:900, cycles:3},
+  {sr:100, emin:0,  emax:900, cycles:3},
+  {sr:20,  emin:0,  emax:900, cycles:3},
+  {sr:20,  emin:50, emax:900, cycles:3}
+];
+const defaultEIS = () => [
+  {dc:25, freqMax:10000, freqMin:0.1, amp:1.25, ppd:10, intCyc:3},
+  {dc:50, freqMax:10000, freqMin:0.1, amp:2.5,  ppd:10, intCyc:3},
+  {dc:75, freqMax:10000, freqMin:0.1, amp:3.75, ppd:10, intCyc:3}
+];
+const defaultH2X = (cond) => ({enabled:true, sr:1, estart:0.05, eend:0.6, T:cond.T, P:cond.P, accept:2});
+const defaultPolCurve = (cond) => ({la:cond.lambda, lc:cond.lambda, rha:cond.RH_a, rhc:cond.RH_c, T:cond.T, P:cond.P, ocvpre:60, hold:180, avg:30, steps:'0,0.1,0.2,0.4,0.6,0.8,1.0,1.2,1.5,2.0'});
+
+// Default pol conditions
+const defaultPolConditions = [
+  {lambda:5, RH_c:70, RH_a:70, P:1.5, T:80},
+  {lambda:3, RH_c:15, RH_a:70, P:1.5, T:80},
+  {lambda:2, RH_c:0,  RH_a:70, P:1.5, T:80}
+];
+
+// Build a fresh block; cvTemperature/polCurve/h2x default from cond but are independently
+// editable afterward — they only ever get re-seeded here, at creation time.
+function makeBlock(id, label, phase, cond){
+  return {
+    id, label, phase, cond,
+    polCurve: defaultPolCurve(cond),
+    cvs: defaultCVs(),
+    cvTemperature: cond.T,
+    eis: defaultEIS(),
+    h2x: defaultH2X(cond),
+    expanded: false
+  };
+}
+
+let builderBlocks = [
+  makeBlock(1, 'POL1', 'pre', {...defaultPolConditions[0]}),
+  makeBlock(2, 'POL2', 'pre', {...defaultPolConditions[1]}),
+  makeBlock(3, 'POL3', 'pre', {...defaultPolConditions[2]})
+];
+let nextBlockId = 4;
+let dragSrcIdx = null;
+let dragSrcPhase = null;
+
+// ========== BOL SELECTOR ==========
+function renderBuilderBol() {
+  const container = document.getElementById('builderBolSelector');
+  if (!container) return;
+  container.innerHTML = builderBolProtocols.map((p, i) => `
+    <div class="bol-option ${p.selected ? 'selected' : ''}" onclick="toggleBolSelection(${i})">
+      <div class="bol-check">${p.selected ? '<i class="fas fa-check"></i>' : ''}</div>
+      <div>
+        <div class="bol-name"><i class="fas ${p.icon}" style="margin-right:6px;color:var(--green)"></i>${p.name}</div>
+        <div class="bol-desc">${p.desc}</div>
+      </div>
+    </div>
+  `).join('');
+  renderBuilderPreview();
+}
+
+function toggleBolSelection(i) {
+  builderBolProtocols[i].selected = !builderBolProtocols[i].selected;
+  renderBuilderBol();
+}
+
+// ========== AST SELECTOR ==========
+function renderBuilderAst() {
+  const container = document.getElementById('builderAstSelector');
+  if (!container) return;
+  container.innerHTML = builderAstProtocols.map((p, i) => `
+    <div class="bol-option ${p.selected ? 'selected' : ''}" onclick="toggleAstSelection(${i})">
+      <div class="bol-check">${p.selected ? '<i class="fas fa-check"></i>' : ''}</div>
+      <div>
+        <div class="bol-name"><i class="fas ${p.icon}" style="margin-right:6px;color:var(--orange)"></i>${p.name}</div>
+        <div class="bol-desc">${p.desc}</div>
+      </div>
+    </div>
+  `).join('');
+  renderBuilderPreview();
+}
+
+function toggleAstSelection(i) {
+  builderAstProtocols[i].selected = !builderAstProtocols[i].selected;
+  renderBuilderAst();
+}
+
+// ========== EC BLOCK LIST ==========
+function renderBuilderBlocks() {
+  const preContainer = document.getElementById('builderEcBlocksPre');
+  const postContainer = document.getElementById('builderEcBlocksPost');
+  if (!preContainer || !postContainer) return;
+
+  const preBlocks = builderBlocks.filter(b => b.phase !== 'post');
+  const postBlocks = builderBlocks.filter(b => b.phase === 'post');
+
+  preContainer.innerHTML = preBlocks.length === 0
+    ? '<div style="text-align:center;padding:20px;color:var(--text-faint);font-size:13px">No blocks yet. Add a POL + EC block below.</div>'
+    : preBlocks.map((block, idx) => renderBlockHTML(block, idx)).join('');
+
+  postContainer.innerHTML = postBlocks.length === 0
+    ? '<div style="text-align:center;padding:16px;color:var(--text-faint);font-size:13px">No post-AST blocks. Clone a pre-AST block or add one to check stability/aging.</div>'
+    : postBlocks.map((block, idx) => renderBlockHTML(block, idx)).join('');
+
+  document.getElementById('polBlockCount').textContent = builderBlocks.length + ' block' + (builderBlocks.length !== 1 ? 's' : '');
+  renderBuilderPreview();
+}
+
+function renderBlockHTML(block, idx) {
+  const c = block.cond;
+  const badges = `λ=${c.lambda} | RH<sub>c</sub>=${c.RH_c}% | ${c.T}°C | ${c.P}bar`;
+  const cvCount = block.cvs.length;
+  const eisCount = block.eis.length;
+
+  let bodyHTML = '';
+  if (block.expanded) {
+    // Structure only — exact values (scan rates, voltage windows, temperatures) are edited
+    // in the Electrochemical Tests section, which reads/writes these same block objects.
+    bodyHTML += `<div class="note" style="margin-bottom:12px">Configure exact parameters in the <strong>Electrochemical Tests</strong> section. Here you only control how many of each measurement run.</div>`;
+
+    // CV sub-measurements
+    bodyHTML += `
+      <div style="margin-bottom:12px">
+        <div class="submeas-header">
+          <span class="submeas-label"><i class="fas fa-rotate" style="color:var(--green);margin-right:4px"></i>Cyclic Voltammetry</span>
+        </div>
+        <div class="submeas-list" id="cvList_${block.id}">
+          ${block.cvs.map((cv, ci) => renderCVRow(block.id, ci, cv)).join('') || `<div class="note" style="text-align:center;color:var(--text-faint)">Skipped — no CV measurements</div>`}
+        </div>
+        <button class="add-btn" onclick="addCV(${block.id})"><i class="fas fa-plus"></i> Add CV Measurement</button>
+      </div>`;
+
+    // EIS sub-measurements
+    bodyHTML += `
+      <div style="margin-bottom:12px">
+        <div class="submeas-header">
+          <span class="submeas-label"><i class="fas fa-circle-nodes" style="color:var(--purple);margin-right:4px"></i>EIS Measurements</span>
+        </div>
+        <div class="eis-rows" id="eisList_${block.id}">
+          ${block.eis.map((e, ei) => renderEISRow(block.id, ei, e)).join('') || `<div class="note" style="text-align:center;color:var(--text-faint)">Skipped — no EIS measurements</div>`}
+        </div>
+        <button class="add-btn" onclick="addEIS(${block.id})"><i class="fas fa-plus"></i> Add EIS Point</button>
+      </div>`;
+
+    // H2 Crossover toggle
+    bodyHTML += `
+      <div>
+        <div class="submeas-label" style="margin-bottom:8px"><i class="fas fa-droplet" style="color:var(--orange);margin-right:4px"></i>H₂ Crossover (LSV)</div>
+        <div class="submeas-item">
+          <div class="sm-icon" style="background:var(--orange-dim);color:var(--orange)"><i class="fas fa-droplet"></i></div>
+          <span class="sm-name">H₂X LSV</span>
+          <span class="sm-params" style="color:var(--text-faint)">${block.h2x.enabled ? `${block.h2x.sr} mV/s · accept ${block.h2x.accept} mA/cm²` : 'Disabled'}</span>
+          <div class="sm-actions">
+            <button class="sm-btn ${block.h2x.enabled ? 'del' : ''}" onclick="toggleH2X(${block.id})" title="${block.h2x.enabled ? 'Disable' : 'Enable'}">
+              <i class="fas fa-${block.h2x.enabled ? 'eye' : 'eye-slash'}"></i>
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="ec-block-item ${block.expanded ? 'expanded' : ''}" data-phase="${block.phase || 'pre'}" id="ecblock_${block.id}" draggable="true"
+      ondragstart="dragStart(event,${idx},'${block.phase || 'pre'}')" ondragend="dragEnd(event)">
+      <div class="ec-block-header" onclick="toggleBlockExpand(${block.id})">
+        <span class="drag-handle" ondragstart="event.stopPropagation()" onclick="event.stopPropagation()" draggable="false">
+          <i class="fas fa-grip-vertical"></i>
+        </span>
+        <div class="block-num" style="${block.phase==='post' ? 'background:var(--orange)' : ''}">${block.order || idx + 1}</div>
+        <div class="block-title">${block.label}</div>
+        <div class="block-badges">
+          <span class="block-badge">${badges}</span>
+          <span class="block-badge" style="color:var(--green)"><i class="fas fa-rotate" style="margin-right:3px"></i>${cvCount} CV</span>
+          <span class="block-badge" style="color:var(--purple)"><i class="fas fa-circle-nodes" style="margin-right:3px"></i>${eisCount} EIS</span>
+          ${block.h2x.enabled ? `<span class="block-badge" style="color:var(--orange)"><i class="fas fa-droplet" style="margin-right:3px"></i>H₂X</span>` : ''}
+          ${block.agedFrom ? `<span class="block-badge" style="color:var(--text-faint)"><i class="fas fa-link" style="margin-right:3px"></i>same as ${block.agedFrom}</span>` : ''}
+        </div>
+        <button class="block-toggle-btn" title="Expand/Collapse"><i class="fas fa-chevron-right toggle-chevron"></i></button>
+        ${block.phase !== 'post' ? `<button class="remove-block-btn" style="color:var(--orange)" onclick="event.stopPropagation();cloneBlockToPost(${block.id})" title="Clone to Post-AST (stability/aging comparison)">
+          <i class="fas fa-clone"></i>
+        </button>` : ''}
+        <button class="remove-block-btn" onclick="event.stopPropagation();removeBlock(${block.id})" title="Remove block">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
+      ${block.expanded ? `<div class="ec-block-body">${bodyHTML}</div>` : ''}
+    </div>`;
+}
+
+function renderCVRow(blockId, ci, cv) {
+  return `
+    <div class="submeas-item" id="cvrow_${blockId}_${ci}">
+      <div class="sm-icon" style="background:var(--green-dim);color:var(--green)"><i class="fas fa-rotate"></i></div>
+      <span class="sm-name">CV ${ci + 1}</span>
+      <span class="sm-params" style="color:var(--text-faint)">${cv.sr} mV/s · ${cv.emin}–${cv.emax} mV · ${cv.cycles} cyc</span>
+      <div class="sm-actions">
+        <button class="sm-btn del" onclick="removeCV(${blockId},${ci})" title="Remove CV"><i class="fas fa-xmark"></i></button>
+      </div>
+    </div>`;
+}
+
+function renderEISRow(blockId, ei, eis) {
+  return `
+    <div class="eis-row" id="eisrow_${blockId}_${ei}">
+      <div class="sm-icon" style="background:var(--purple-dim);color:var(--purple);width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0"><i class="fas fa-circle-nodes"></i></div>
+      <span style="font-size:11px;font-weight:600;min-width:30px">EIS</span>
+      <span style="font-size:11px;color:var(--text-faint);flex:1">@${eis.dc}A · ${eis.freqMin}–${eis.freqMax} Hz</span>
+      <button class="sm-btn del" onclick="removeEIS(${blockId},${ei})" title="Remove EIS"><i class="fas fa-xmark"></i></button>
+    </div>`;
+}
+
+// ========== BLOCK OPERATIONS ==========
+function toggleBlockExpand(blockId) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (b) { b.expanded = !b.expanded; renderBuilderBlocks(); }
+}
+
+// refreshEcBlocks is called after any structural change (block add/remove/clone/reorder,
+// or a CV/EIS count / H2X enabled change) so the Builder and EC section — both views over
+// the same builderBlocks array — can never drift out of sync with each other.
+function refreshEcBlocks() {
+  if (!builderBlocks.some(b => b.id === currentPolBlockId)) {
+    currentPolBlockId = builderBlocks[0]?.id ?? null;
+  }
+  renderPolTabs();
+  renderBuilderBlocks();
+  renderEcSection();
+}
+
+function addPolBlock(phase='pre') {
+  const n = builderBlocks.length + 1;
+  // Cycle through the reference conditions rather than clamping to the last one, so
+  // blocks added past the 3rd default (e.g. post-AST aging repeats) aren't all identical.
+  const condIdx = (n - 1) % defaultPolConditions.length;
+  const cond = {...defaultPolConditions[condIdx]};
+  const block = makeBlock(nextBlockId++, `POL${n}`, phase, cond);
+  block.expanded = true;
+  if (phase === 'post') {
+    builderBlocks.push(block);
+  } else {
+    // Insert after the last pre-AST block, ahead of any post-AST blocks
+    const lastPreIdx = builderBlocks.reduce((acc, b, i) => b.phase !== 'post' ? i : acc, -1);
+    builderBlocks.splice(lastPreIdx + 1, 0, block);
+  }
+  relabelBlocks();
+  refreshEcBlocks();
+}
+
+function cloneBlockToPost(blockId) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (!b) return;
+  builderBlocks.push({
+    id: nextBlockId++,
+    label: '',
+    phase: 'post',
+    cond: {...b.cond},
+    polCurve: {...b.polCurve},
+    cvs: b.cvs.map(cv => ({...cv})),
+    cvTemperature: b.cvTemperature,
+    eis: b.eis.map(e => ({...e})),
+    h2x: {...b.h2x},
+    expanded: true,
+    agedFrom: b.label
+  });
+  relabelBlocks();
+  refreshEcBlocks();
+  showToast(`Cloned ${b.label} conditions to a post-AST block`, 'success');
+}
+
+function removeBlock(blockId) {
+  builderBlocks = builderBlocks.filter(b => b.id !== blockId);
+  relabelBlocks();
+  refreshEcBlocks();
+}
+
+function relabelBlocks() {
+  // Keep pre-AST blocks contiguous ahead of post-AST blocks, then number sequentially
+  builderBlocks = [
+    ...builderBlocks.filter(b => b.phase !== 'post'),
+    ...builderBlocks.filter(b => b.phase === 'post')
+  ];
+  builderBlocks.forEach((b, i) => { b.label = `POL${i + 1}`; b.order = i + 1; });
+}
+
+function updateBlockH2X(blockId, field, value) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (b) b.h2x[field] = parseFloat(value);
+}
+
+function toggleH2X(blockId) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (b) { b.h2x.enabled = !b.h2x.enabled; refreshEcBlocks(); }
+}
+
+// ========== CV OPERATIONS ==========
+// Structural (add/remove, down to zero — "skip this test") live in both the Builder and
+// the EC section since they share state. Value edits (updateCV) only matter to the EC
+// section's own rendered fields, so they don't need to trigger a refresh elsewhere.
+function addCV(blockId) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (!b) return;
+  const n = b.cvs.length;
+  b.cvs.push({sr: n < 2 ? 100 : 20, emin: n % 2 === 0 ? 50 : 0, emax: 900, cycles: 3});
+  refreshEcBlocks();
+  // Scroll to new CV
+  setTimeout(() => {
+    const list = document.getElementById(`cvList_${blockId}`);
+    if (list) list.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }, 100);
+}
+
+function removeCV(blockId, ci) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (!b) return;
+  b.cvs.splice(ci, 1);
+  refreshEcBlocks();
+}
+
+function updateCV(blockId, ci, field, value) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (b && b.cvs[ci]) b.cvs[ci][field] = ['sr','emin','emax','cycles'].includes(field) ? parseFloat(value) : value;
+}
+
+// ========== EIS OPERATIONS ==========
+function addEIS(blockId) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (!b) return;
+  const lastDC = b.eis.length > 0 ? b.eis[b.eis.length-1].dc : 50;
+  b.eis.push({dc: lastDC + 25, freqMax:10000, freqMin:0.1, amp: parseFloat(((lastDC+25)*0.05).toFixed(2)), ppd:10, intCyc:3});
+  refreshEcBlocks();
+}
+
+function removeEIS(blockId, ei) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (!b) return;
+  b.eis.splice(ei, 1);
+  refreshEcBlocks();
+}
+
+function updateEIS(blockId, ei, field, value) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (b && b.eis[ei]) b.eis[ei][field] = parseFloat(value);
+}
+
+function updateCvTemperature(blockId, value) {
+  const b = builderBlocks.find(b => b.id === blockId);
+  if (b) b.cvTemperature = parseFloat(value);
+}
+
+// ========== DRAG & DROP ==========
+// Reordering is scoped within a phase group (pre-AST or post-AST); dragSrcIdx/dragSrcPhase
+// index into that group's own rendered list, not the flat builderBlocks array.
+function dragStart(event, idx, phase) {
+  dragSrcIdx = idx;
+  dragSrcPhase = phase;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', idx);
+  setTimeout(() => {
+    const el = document.querySelectorAll(`.ec-block-item[data-phase="${phase}"]`)[idx];
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+
+function dragEnd(event) {
+  document.querySelectorAll('.ec-block-item').forEach(el => el.classList.remove('dragging'));
+}
+
+function dragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  // Highlight drop target
+  const target = event.target.closest('.ec-block-item');
+  document.querySelectorAll('.ec-block-item').forEach(el => el.style.outline = '');
+  if (target) target.style.outline = '2px solid var(--blue)';
+}
+
+function dropBlock(event, phase) {
+  event.preventDefault();
+  document.querySelectorAll('.ec-block-item').forEach(el => el.style.outline = '');
+  const target = event.target.closest('.ec-block-item');
+  if (!target || dragSrcIdx === null || dragSrcPhase !== phase) { dragSrcIdx = null; dragSrcPhase = null; return; }
+  const items = Array.from(document.querySelectorAll(`.ec-block-item[data-phase="${phase}"]`));
+  const destIdx = items.indexOf(target);
+  if (destIdx === -1 || destIdx === dragSrcIdx) { dragSrcIdx = null; dragSrcPhase = null; return; }
+
+  const group = builderBlocks.filter(b => phase === 'post' ? b.phase === 'post' : b.phase !== 'post');
+  const other = builderBlocks.filter(b => !group.includes(b));
+  const [moved] = group.splice(dragSrcIdx, 1);
+  group.splice(destIdx, 0, moved);
+  builderBlocks = phase === 'post' ? [...other, ...group] : [...group, ...other];
+
+  relabelBlocks();
+  dragSrcIdx = null;
+  dragSrcPhase = null;
+  refreshEcBlocks();
+}
+
+// ========== LIVE PREVIEW ==========
+function renderBuilderPreview() {
+  const flow = document.getElementById('builderPreviewFlow');
+  if (!flow) return;
+  const selectedBols = builderBolProtocols.filter(p => p.selected);
+  const selectedAsts = builderAstProtocols.filter(p => p.selected);
+  let chips = [];
+  // Pre-test
+  chips.push({label:'PRE-TEST', cls:'chip-pretest', subs:['Assembly','Leak Test','OCV']});
+  // BOL chips
+  selectedBols.forEach(p => {
+    chips.push({label: p.name.split('(')[0].trim(), cls:'chip-bol', subs:['Activation','Hydration','Conv. Check']});
+  });
+  if (selectedBols.length === 0) {
+    chips.push({label:'BOL (none)', cls:'chip-bol', subs:['—']});
+  }
+  // POL+EC blocks — pre-AST
+  const blockChip = (block) => {
+    const c = block.cond;
+    const subs = [];
+    subs.push(`Pol (λ=${c.lambda},RH=${c.RH_c}%)`);
+    block.cvs.forEach((cv,i) => subs.push(`CV${i+1}: ${cv.sr}mV/s`));
+    block.eis.forEach(e => subs.push(`EIS @${e.dc}A`));
+    if (block.h2x.enabled) subs.push('H₂ Crossover');
+    return {label: block.label, cls:'chip-pol', subs};
+  };
+  builderBlocks.filter(b => b.phase !== 'post').forEach(block => chips.push(blockChip(block)));
+  // AST chips (only for selected protocols — deselecting all removes AST entirely)
+  selectedAsts.forEach(p => {
+    chips.push({label: p.name.split('(')[0].trim(), cls:'chip-ast', subs:[p.desc]});
+  });
+  // POL+EC blocks — post-AST (stability/aging checks)
+  builderBlocks.filter(b => b.phase === 'post').forEach(block => chips.push(blockChip(block)));
+
+  flow.innerHTML = chips.map((chip, i) => `
+    ${i > 0 ? '<div class="preview-arrow"><i class="fas fa-chevron-right"></i></div>' : ''}
+    <div class="preview-block">
+      <div class="preview-chip ${chip.cls}">${chip.label}</div>
+      <div class="preview-sub">${chip.subs.slice(0,3).join(' · ')}${chip.subs.length > 3 ? ` +${chip.subs.length-3}` : ''}</div>
+    </div>
+  `).join('');
+}
+
+// ========== APPLY TO EC VIEW ==========
+// Builder and EC section already share builderBlocks, so there is nothing to sync — this
+// just jumps to the EC view on the first block.
+function applyBuilderToEC() {
+  currentPolBlockId = builderBlocks[0]?.id ?? null;
+  renderPolTabs();
+  renderEcSection();
+  showSection('ec');
+  showToast('Showing current procedure in EC View', 'success');
+}
+
+// ========== EXPORT ELABFTW METADATA JSON ==========
+// Output matches this workspace's existing eLabFTW extra_fields templates
+// (see eLabFTW/elabftw_pemwe_schema.json, GenericTestBenchTemplate.json): a flat
+// "extra_fields" map keyed by field label, grouped via "elabftw.extra_fields_groups".
+// Every group beyond "Metadata" is generated from live procedure state (builderBlocks /
+// builderBolProtocols / builderAstProtocols), so the export always matches what's been built.
+//
+// Every individual parameter gets its own field (type "number" or "text") rather than being
+// squashed into one descriptive string — that's what makes the export machine-readable
+// (filterable/queryable per field in eLabFTW), not just human-readable.
+// [label, unit] per raw parameter key. Units are attached to the field's own "unit"/"units"
+// properties (eLabFTW's native unit mechanism), not embedded in the field name/label.
+const PARAM_LABELS = {
+  T: ['Temperature', '°C'], RH_a: ['RH Anode', '%'], RH_c: ['RH Cathode', '%'],
+  gas_a: ['Gas Anode', ''], gas_c: ['Gas Cathode', ''], P: ['Pressure', 'bar'],
+  duration: ['Duration', 'min'], hold_time: ['Hold Time', 's'],
+  ocv_limit: ['OCV Limit', 'V'], conv_crit: ['Convergence Criterion', 'mV/h'],
+  j_start: ['j Start', 'A/cm²'], j_end: ['j End', 'A/cm²'], j_step: ['j Step', 'A/cm²'],
+  V_low: ['V Low', 'V'], V_high: ['V High', 'V'], ocv_periods: ['OCV Periods', ''],
+  j_const: ['j Constant', 'A/cm²'], lambda_start: ['λ Start', ''], lambda_end: ['λ End', ''],
+  lambda_steps: ['λ Steps', ''], j_target: ['j Target', 'A/cm²'], max_loops: ['Max Loops', ''],
+  waveform: ['Waveform', ''], E_low_V: ['E Low', 'V'], E_high_V: ['E High', 'V'],
+  hold_low_s: ['Hold Time Low', 's'], hold_high_s: ['Hold Time High', 's'],
+  total_cycles: ['Total Cycles', ''], T_degC: ['Temperature', '°C'], RH_pct: ['RH', '%'],
+  diag_interval_cycles: ['Diagnostic Interval', 'cycles'], scan_rate_mV_s: ['Scan Rate', 'mV/s'],
+  ocv_hold_duration_h: ['OCV Hold Duration', 'h'], RH_low_pct: ['RH Low', '%'],
+  RH_high_pct: ['RH High', '%'], RH_cycle_period_min: ['RH Cycle Period', 'min'],
+  diag_interval_h: ['Diagnostic Interval', 'h'], crossover_criterion_mA_cm2: ['Crossover Criterion', 'mA/cm²'],
+  lambda: ['λ', ''], la: ['λ Anode', ''], lc: ['λ Cathode', ''],
+  rha: ['RH Anode', '%'], rhc: ['RH Cathode', '%'],
+  ocvpre: ['OCV Pre-hold', 's'], hold: ['Hold Time per Step', 's'], avg: ['Averaging Time', 's'],
+  steps: ['Current Steps', 'A/cm²'], sr: ['Scan Rate', 'mV/s'],
+  emin: ['E min', 'mV vs SHE'], emax: ['E max', 'mV vs SHE'], cycles: ['Cycles', ''],
+  dc: ['DC Current', 'A'], freqMax: ['Frequency Max', 'Hz'], freqMin: ['Frequency Min', 'Hz'],
+  amp: ['AC Amplitude', 'A'], ppd: ['Points per Decade', ''], intCyc: ['Integration Cycles', ''],
+  estart: ['E Start', 'V vs SHE'], eend: ['E End', 'V vs SHE'], accept: ['Acceptance Criterion', 'mA/cm²']
+};
+
+function paramInfo(key){
+  const entry = PARAM_LABELS[key];
+  if (entry) return {label: entry[0], unit: entry[1]};
+  return {label: key.replace(/_/g,' ').replace(/^\w/, c => c.toUpperCase()), unit: ''};
+}
+
+// Adds one extra_field per own-enumerable key of obj (skipping booleans, e.g. h2x.enabled,
+// which are represented structurally rather than as a fillable value). Number fields always
+// carry "unit"/"units" (eLabFTW convention — empty when the parameter is dimensionless).
+function addParamFields(extraFields, gid, prefix, obj, pos){
+  Object.entries(obj).forEach(([key, value]) => {
+    if (typeof value === 'boolean') return;
+    const {label, unit} = paramInfo(key);
+    const name = prefix ? `${prefix}: ${label}` : label;
+    const isNumber = typeof value === 'number';
+    extraFields[name] = {
+      type: isNumber ? 'number' : 'text',
+      value: String(value),
+      group_id: gid,
+      position: pos.n++,
+      ...(isNumber ? {unit: unit, units: unit ? [unit] : []} : {})
+    };
+  });
+}
+
+function addBlockFields(extraFields, groups, gid, block){
+  groups.push({id: gid, name: `${block.label} + EC${block.phase === 'post' ? ' (Post-AST)' : ''}`});
+  const pos = {n: 1};
+  const L = block.label; // extra_fields is one flat object across all groups — every field
+                          // name must be globally unique, so every field is prefixed with L.
+
+  addParamFields(extraFields, gid, `${L} Conditions`, block.cond, pos);
+  if (block.agedFrom){
+    extraFields[`${L} Conditions: Same As`] = {type:'text', value: block.agedFrom, group_id: gid, position: pos.n++};
+  }
+  addParamFields(extraFields, gid, `${L} Polarization Curve`, block.polCurve, pos);
+
+  if (block.cvs.length === 0){
+    extraFields[`${L} CV Measurements`] = {type:'text', value:'Skipped (no CV measurements)', group_id: gid, position: pos.n++};
+  } else {
+    extraFields[`${L} CV: Temperature`] = {type:'number', value: String(block.cvTemperature), group_id: gid, position: pos.n++, unit: '°C', units: ['°C']};
+    const num = L.replace('POL','');
+    block.cvs.forEach((cv,i) => addParamFields(extraFields, gid, `${L} CV ${num}.${i+1}`, cv, pos));
+  }
+
+  if (block.eis.length === 0){
+    extraFields[`${L} EIS Measurements`] = {type:'text', value:'Skipped (no EIS measurements)', group_id: gid, position: pos.n++};
+  } else {
+    block.eis.forEach(e => addParamFields(extraFields, gid, `${L} EIS @${e.dc}A`, e, pos));
+  }
+
+  if (!block.h2x.enabled){
+    extraFields[`${L} H2 Crossover`] = {type:'text', value:'Disabled', group_id: gid, position: pos.n++};
+  } else {
+    addParamFields(extraFields, gid, `${L} H2 Crossover`, block.h2x, pos);
+  }
+}
+
+function exportBuilderJSON() {
+  const extraFields = {};
+  const groups = [];
+  let gid = 1;
+
+  // --- Metadata (always the same 7 fields) ---
+  groups.push({id: gid, name: 'Metadata'});
+  [
+    ['Project', exportMetadata.project],
+    ['Owner', exportMetadata.owner],
+    ['Experimenter', exportMetadata.experimenter],
+    ['Sample Name', exportMetadata.sampleName],
+    ['Teststand Nr.', exportMetadata.teststandNr],
+    ['Results storage path', exportMetadata.resultsPath],
+    ['Procedure shortname', exportMetadata.shortname]
+  ].forEach(([label, value], i) => {
+    extraFields[label] = {type:'text', value: value || '', group_id: gid, position: i+1};
+  });
+  gid++;
+
+  // --- Break-in / BOL: one group per selected protocol ---
+  const selectedBols = builderBolProtocols.filter(p => p.selected);
+  if (selectedBols.length === 0){
+    groups.push({id: gid, name: 'Break-in / BOL'});
+    extraFields['BOL Protocol'] = {type:'text', value:'None selected', group_id: gid, position:1};
+    gid++;
+  } else {
+    selectedBols.forEach(p => {
+      const idx = builderBolProtocols.indexOf(p);
+      const ref = bolProtocols[idx];
+      groups.push({id: gid, name: `BOL: ${ref.name}`});
+      const pos = {n: 1};
+      const L = `BOL: ${ref.name}`; // prefix needed — multiple BOL protocols can be selected
+      extraFields[`${L}: Activation Type`] = {type:'text', value: ref.name, group_id: gid, position: pos.n++};
+      addParamFields(extraFields, gid, L, ref.params, pos);
+      gid++;
+    });
+  }
+
+  // --- POL+EC blocks: pre-AST ---
+  builderBlocks.filter(b => b.phase !== 'post').forEach(block => {
+    addBlockFields(extraFields, groups, gid, block);
+    gid++;
+  });
+
+  // --- AST: one group per selected protocol ---
+  const selectedAsts = builderAstProtocols.filter(p => p.selected);
+  if (selectedAsts.length === 0){
+    groups.push({id: gid, name: 'AST'});
+    extraFields['AST'] = {type:'text', value:'Not included in this procedure', group_id: gid, position:1};
+    gid++;
+  } else {
+    selectedAsts.forEach(p => {
+      const idx = builderAstProtocols.indexOf(p);
+      groups.push({id: gid, name: `AST: ${p.name}`});
+      const pos = {n: 1};
+      const L = `AST: ${p.name}`; // prefix needed — Catalyst + Support are both selected by default
+      extraFields[`${L}: AST Type`] = {type:'text', value: p.name, group_id: gid, position: pos.n++};
+      addParamFields(extraFields, gid, L, astProtocolDefaults[idx], pos);
+      gid++;
+    });
+  }
+
+  // --- POL+EC blocks: post-AST (stability/aging) ---
+  builderBlocks.filter(b => b.phase === 'post').forEach(block => {
+    addBlockFields(extraFields, groups, gid, block);
+    gid++;
+  });
+
+  const data = {
+    extra_fields: extraFields,
+    elabftw: {
+      display_main_text: false,
+      extra_fields_groups: groups
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const nameSlug = (exportMetadata.shortname || 'ECT_procedure').replace(/[^a-zA-Z0-9_-]+/g,'_');
+  a.href = url; a.download = `${nameSlug}.json`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('eLabFTW metadata JSON exported', 'success');
+}
+
+// ========== TOAST NOTIFICATION ==========
+function showToast(msg, type='info') {
+  const existing = document.getElementById('builderToast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.id = 'builderToast';
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:999;padding:10px 18px;border-radius:8px;
+    font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:fadeIn 0.2s ease;
+    background:${type==='success'?'var(--green)':'var(--surface-3)'};color:${type==='success'?'#fff':'var(--text)'};
+    border:1px solid ${type==='success'?'var(--green)':'var(--border)'};pointer-events:none`;
+  t.innerHTML = `<i class="fas fa-${type==='success'?'check':'info-circle'}" style="margin-right:6px"></i>${msg}`;
+  document.body.appendChild(t);
+  setTimeout(() => { if(t.parentNode) t.remove(); }, 2500);
+}
+
+// ========== INIT BUILDER ==========
+function initBuilder() {
+  renderBuilderBol();
+  renderBuilderAst();
+  renderBuilderBlocks();
+  renderExportMetadataForm();
+}
+
+
+// ========== INIT ==========
+buildPipeline();
+renderBolSection();
+renderPolTabs();
+renderEcSection();
+renderAstSection();
+initBuilder();
+</script>
+<script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="transform:translate(-${scrollX}px,-${scrollY}px);transform-origin:top left">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+</script></body>
+</html>
