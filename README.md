@@ -1,4 +1,4 @@
-# PEMFC-MEA-EC-Test
+# PEMFC-MEA-EC-Test-Sequence-Builer
 
 A single self-contained HTML dasboard for planning PEMFC (Proton Exchange Membrane Fuel Cell) MEA (Membrane Electrode Assembly) test campaigns — break-in, electrochemical characterization, and accelerated stress testing — and exporting the finished procedure as an eLabFTW-compatible metadata JSON.
 
