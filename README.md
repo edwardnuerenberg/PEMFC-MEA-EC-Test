@@ -70,9 +70,10 @@ Any modern browser (tested against headless Chromium/Edge during development). U
 
 - Allow export, safe and import procedures to and from local database, or directly next point
 - Incorporate API to eLabFTW to oversee existing procedures, import and export directly from and to eLabFTW instead of local database. Adjust naming and count to ZBT system: 41234_ENG_ECM_123_456(_nickname). Allow connection to MEA-sample and the teststation.
-3.Simplify eLabFTW entry by separating main descriptor parameters from technical descriptors
-4.Adjust parameter naming along official ZBT consensus
-5.Allow higher flexibility in the EC procedure, like e.g. temperatures variation between CVs in one measurement, changing of order of the hitherto fixed POL1, CV1,2,x, EIS1,2,y, H2P. To e.g. POL1, CV1, EIS1, CV2, EIS2, ...
-6.Add another sublayer hidden from the user, which is covering the technical parameters of the Lifestation script, like e.g. heating, cooling, breakin before EIS, etc. by parametrization of Lifestation scripts. Allow generation and export of those scripts.
-7.Assign duration to the respective procedures or blocks to approximate measurement duration
-8.Design optimization: couple hitherto static graphical representation to real values (not that easy)
+- Simplify eLabFTW entry by separating main descriptor parameters from technical descriptors
+- Adjust parameter naming along official ZBT consensus
+- Allow higher flexibility in the EC procedure, like e.g. temperatures variation between CVs in one measurement, changing of order of the hitherto fixed POL1, CV1,2,x, EIS1,2,y, H2P. To e.g. POL1, CV1, EIS1, CV2, EIS2, ...
+- Expand the script to electrolyzer testing 
+- Add another sublayer hidden from the user, which is covering the technical parameters of the Lifestation script, like e.g. heating, cooling, breakin before EIS, etc. by parametrization of Lifestation scripts. Allow generation and export of those scripts.
+- Assign duration to the respective procedures or blocks to approximate measurement duration
+- Design optimization: couple hitherto static graphical representation to real values (not that easy)
