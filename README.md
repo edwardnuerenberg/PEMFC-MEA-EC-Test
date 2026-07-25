@@ -1,7 +1,6 @@
 # PEMFC-MEA-EC-Test
-Dashboard to visualize electrochemical testing protocols for fuel cells featuring BOL, POL, CV, EIS, H2P, AST. Build procedures, adjust measurement variables and export detailed parameter sets to eLabFTW. 
 
-A single self-contained HTML file for planning PEMFC (Proton Exchange Membrane Fuel Cell) MEA (Membrane Electrode Assembly) test campaigns — break-in, electrochemical characterization, and accelerated stress testing — and exporting the finished procedure as an eLabFTW-compatible metadata JSON.
+A single self-contained HTML dasboard for planning PEMFC (Proton Exchange Membrane Fuel Cell) MEA (Membrane Electrode Assembly) test campaigns — break-in, electrochemical characterization, and accelerated stress testing — and exporting the finished procedure as an eLabFTW-compatible metadata JSON.
 
 No build step, no server, no dependencies to install. Open [`PEMFC MEA TestingV2.html`](PEMFC%20MEA%20TestingV2.html) directly in a browser.
 
