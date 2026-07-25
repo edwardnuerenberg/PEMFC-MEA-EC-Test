@@ -68,8 +68,8 @@ Any modern browser (tested against headless Chromium/Edge during development). U
 
 ## Proposed future work
 
-1.Allow export, safe and import procedures to and from local database, or directly 2
-2.Incorporate API to eLabFTW to oversee existing procedures, import and export directly from and to eLabFTW instead of 1. Adjust naming and count to ZBT system: 41234_ENG_ECM_123_456(_nickname). Allow connection to MEA-sample and the teststation.
+- Allow export, safe and import procedures to and from local database, or directly next point
+- Incorporate API to eLabFTW to oversee existing procedures, import and export directly from and to eLabFTW instead of local database. Adjust naming and count to ZBT system: 41234_ENG_ECM_123_456(_nickname). Allow connection to MEA-sample and the teststation.
 3.Simplify eLabFTW entry by separating main descriptor parameters from technical descriptors
 4.Adjust parameter naming along official ZBT consensus
 5.Allow higher flexibility in the EC procedure, like e.g. temperatures variation between CVs in one measurement, changing of order of the hitherto fixed POL1, CV1,2,x, EIS1,2,y, H2P. To e.g. POL1, CV1, EIS1, CV2, EIS2, ...
